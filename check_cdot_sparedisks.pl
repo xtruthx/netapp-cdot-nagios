@@ -87,7 +87,7 @@ if ($not_zeroed){
     print "WARNING: $not_zeroed spare disk(s) not zeroed\n";
     exit 2;
 } elsif($not_assigned){
-	print "WARNING: $not_assigned disk(s) not assigned\n";
+	print "INFO: $not_assigned disk(s) not assigned\n";
 	exit 2;
 } elsif($spare_counter eq 0){
 	print "CRITICAL: number of spare disks is 0\n";
