@@ -93,7 +93,7 @@ while(defined($next)){
             $tag_elem->set_content($next);
         }
 
-        $snap_iterator->child_add_string("max-records", '10000');
+        $snap_iterator->child_add_string("max-records", '5000');
         my $snap_output = $s->invoke_elem($snap_iterator);
 
         if ($snap_output->results_errno != 0) {
@@ -393,7 +393,7 @@ Checks if old ( > 90 days ) Snapshots exist
 
 =item --hostname FQDN
 
-The Hostname of the NetApp to monitor (Cluster or Node MGMT)
+The Hostname of the NetApp to monitor
 
 =item --username USERNAME
 
