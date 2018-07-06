@@ -103,7 +103,7 @@ while(defined($next)){
   
             my $vol_type = $vol_info->child_get_string("type");
 
-            unless($vol_type eq "dp"){
+            unless($vol_type eq "dp" || ($vol_name =~ m/root/)){
  
                 if($policy){
                     if($policy eq "default"){
@@ -358,4 +358,3 @@ to see this Documentation
 =head1 AUTHORS
 
  Alexander Krogloth <git at krogloth.de>
- Therese Ho <thereseh at netapp.com>

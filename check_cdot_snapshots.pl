@@ -143,7 +143,7 @@ while(defined($next)){
             if($age >= $AgeOpt){
                 unless(grep(/$vol_name/, @snapmirrors)){
                     unless($snap_name =~ m/^clone/){
-                        push @old_snapshots, "$vol_name/$snap_name";
+                        push @old_snapshots, "$vol_name/$snap_name\n";
                     }
                 }
             }
@@ -211,7 +211,7 @@ sub snapmirror_volumes {
             $snapmirror_tag_elem->set_content($snapmirror_next_tag);
         }
 
-        $snapmirror_iterator->child_add_string("max-records", '10000');
+        $snapmirror_iterator->child_add_string("max-records", '5000');
         my $snapmirror_output = $s->invoke_elem($snapmirror_iterator);
 
         if ($snapmirror_output->results_errno != 0) {
@@ -227,7 +227,7 @@ sub snapmirror_volumes {
 
                 foreach my $mirror (@snap_relations){
                     my $dest_vol = $mirror->child_get_string("destination-volume");
-                    push(@volumes,$dest_vol);
+                    push(@volumes,$dest_vol."\n");
                 }
             }
         }
