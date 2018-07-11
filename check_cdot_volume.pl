@@ -1,4 +1,5 @@
-#!/usr/bin/perl
+##!/usr/bin/perl
+#!/perl/bin/perl
 
 # nagios: -epn
 # --
@@ -13,7 +14,8 @@
 use strict;
 use warnings;
 
-use lib "/usr/lib/netapp-manageability-sdk/lib/perl/NetApp";
+## use lib "/usr/lib/netapp-manageability-sdk/lib/perl/NetApp";
+use lib "C:/Users/thereseh/Documents/netapp-manageability-sdk-9.3/lib/perl/NetApp";
 
 use NaServer;
 use NaElement;
@@ -325,7 +327,7 @@ while(defined($next)){
 			$h_warn_crit_info->{$vol_name}->{'volume_state'}=$vol_state;
 			
 			chop($crit_msg); chop($crit_msg); $crit_msg .= ")";
-			push (@crit_msg, "$crit_msg" );
+			push (@crit_msg, "$crit_msg\n" );
 			next;
 		} else {
 			# if volume is not offline, get further info in case it's critical
@@ -408,7 +410,7 @@ while(defined($next)){
 				}
 
                 chop($crit_msg); chop($crit_msg); $crit_msg .= ")";
-                push (@crit_msg, "$crit_msg" );
+                push (@crit_msg, "$crit_msg\n" );
 
 			} elsif (($percent>$SizeWarning) || ($inode_percent>$InodeWarning) || (($SnapIgnore eq "false") && ($snapusedpct > $SnapWarning))){
 
@@ -433,13 +435,13 @@ while(defined($next)){
 				}
 
                 chop($warn_msg); chop($warn_msg); $warn_msg .= ")";
-                push (@warn_msg, "$warn_msg" );
+                push (@warn_msg, "$warn_msg\n" );
 
 			} else {
 				if ($SnapIgnore eq "true"){
-					push (@ok_msg, "$vol_name (Size: $space_used/$space_total, $percent%, Inodes: $inode_percent%, State: %vol_state%)" );
+					push (@ok_msg, "$vol_name (Size: $space_used/$space_total, $percent%, Inodes: $inode_percent%, State: %vol_state%)\n" );
 				} else {
-					push (@ok_msg, "$vol_name (Size: $space_used/$space_total, $percent%, Inodes: $inode_percent%, Snapreserve: $snapusedpct%, State: %vol_state%)" );
+					push (@ok_msg, "$vol_name (Size: $space_used/$space_total, $percent%, Inodes: $inode_percent%, Snapreserve: $snapusedpct%, State: %vol_state%)\n" );
 				}
 			}
 						
@@ -492,7 +494,7 @@ $perfdatavolstr =~ s/^\s+//;
 my $perfdataallstr = "$perfdataglobalstr $perfdatavolstr";
 
 if(scalar(@crit_msg) ){
-    print "CRITICAL: ";
+    print "CRITICAL:\n";
     print join (" ", @crit_msg, @warn_msg);
     if ($perf) { 
 		if($perfdatadir) {
@@ -508,7 +510,7 @@ if(scalar(@crit_msg) ){
     print $strHTML if $output_html; 
 	exit 2;
 } elsif(scalar(@warn_msg) ){
-    print "WARNING: ";
+    print "WARNING:\n";
     print join (" ", @warn_msg);
     if ($perf) {
                 if($perfdatadir) {
@@ -663,4 +665,3 @@ to see this Documentation
 
  Alexander Krogloth <git at krogloth.de>
  Stefan Grosser <sgr at firstframe.net>
- Therese Ho <thereseh at netapp.com>
