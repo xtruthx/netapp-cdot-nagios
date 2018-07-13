@@ -3,7 +3,6 @@
 # nagios: -epn
 # --
 # check_cdot_volume - Check Volume Usage
-# Copyright (C) 2018 operational services GmbH & Co. KG
 # Copyright (C) 2013 noris network AG, http://www.noris.net/
 # --
 # This software comes with ABSOLUTELY NO WARRANTY. For details, see
@@ -342,21 +341,6 @@ while(defined($next)){
 		my $sizetotal = $vol_space->child_get_int("size-total");
 
 		my($autogrow_percent,$autogrow_bytes);
-
-		if($vol_autogrow_info) {
-			$autogrow_bytes = $vol_autogrow_info->child_get_string("maximum-size");	
-			$autogrow_percent = ($autogrow_bytes - $sizetotal - $snaptotal)/($sizetotal+$snaptotal);
-
-			if ( $autogrow_percent > 1) {
-				$autogrow_percent = sprintf("%.0f", $autogrow_percent);
-			} else {
-				$autogrow_percent = sprintf("%.0f", ($autogrow_percent*100));
-			}	
-			$perfdata{$vol_name}{'autosize_grow'}=$autogrow_percent;
-		} else {
-			print "CRITICAL: no volume autosize info could be retrieved \n";
-		}
-
 	
 		$perfdata{$vol_name}{'byte_used'}=$vol_space->child_get_int("size-used");
 		$perfdata{$vol_name}{'byte_total'}=$sizetotal;
@@ -368,6 +352,22 @@ while(defined($next)){
 
 		my $space_used = $perfdata{$vol_name}{'byte_used'}/1073741824;
 		my $space_total = $perfdata{$vol_name}{'byte_total'}/1073741824;
+
+		if($vol_autogrow_info) {
+			$autogrow_bytes = $vol_autogrow_info->child_get_string("maximum-size") / 1073741824;	
+			$autogrow_percent = $space_used / $autogrow_bytes;
+
+			if ( $autogrow_percent > 1) {
+				$autogrow_percent = sprintf("%.0f", $autogrow_percent);
+			} else {
+				$autogrow_percent = sprintf("%.0f", ($autogrow_percent*100));
+			}	
+			$perfdata{$vol_name}{'autosize_grow'}=$autogrow_percent;
+			
+			print "AUTOSIZE: ".$autogrow_percent."\n";
+		} else {
+			print "CRITICAL: no volume autosize info could be retrieved \n";
+		}
 
 		if($space_used >1024){
 			$space_used /= 1024;
@@ -624,11 +624,11 @@ The Critical threshold for snapshot space usage. Defaults to 90%.
 
 =item --autosize-warning PERCENT_WARNING
 
-The Warning threshold for snapshot space usage. Defaults to 75%.
+The Warning threshold for autosize grow maximum. Defaults to 75%.
 
 =item --autosize-critical PERCENT_CRITICAL
 
-The Critical threshold for snapshot space usage. Defaults to 90%.
+The Critical threshold for autosize grow maximum. Defaults to 90%.
 
 =item -V | --volume VOLUME
 
