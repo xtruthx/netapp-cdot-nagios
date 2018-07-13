@@ -265,9 +265,10 @@ while(defined($next)){
 
         # if Volume should be excluded from check, ignore and next
         next if exists $Excludelist{$vol_name};
+        my $excludemore = "sdw_cl_";
         
         if ($regexp and $excludeliststr) {
-            if ($vol_name =~ m/$excludeliststr/) {
+            if ($vol_name =~ m/$excludeliststr/ || $vol_name =~ m/$excludemore/) {
                 next;
             }
         }
