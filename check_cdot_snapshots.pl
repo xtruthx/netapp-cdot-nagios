@@ -11,6 +11,7 @@
 # --
 
 use lib "/usr/lib/netapp-manageability-sdk/lib/perl/NetApp";
+
 use NaServer;
 use NaElement;
 use strict;
@@ -19,9 +20,9 @@ use Getopt::Long;
 use Data::Dumper;
 
 GetOptions(
-    'hostname=s'        => \my $Hostname,
-    'username=s'        => \my $Username,
-    'password=s'        => \my $Password,
+    'H|hostname=s'        => \my $Hostname,
+    'u|username=s'        => \my $Username,
+    'p|password=s'        => \my $Password,
     'age=i'             => \my $AgeOpt,
     'numbersnapshot=i'  => \my $snapshotnumber,
     'retentiondays=i'   => \my $retention_days,
@@ -63,6 +64,7 @@ my $s = NaServer->new( $Hostname, 1, 3 );
 $s->set_transport_type("HTTPS");
 $s->set_style("LOGIN");
 $s->set_admin_user( $Username, $Password );
+$s->set_timeout(10);
 
 single_volume_check() if $volumename;
 
