@@ -355,7 +355,7 @@ if(scalar(@crit_msg) ){
         }
     exit 0;
 } else {
-    print "WARNING: no online lun found\n";
+    print "OK: 0 online lun found\n";
     exit 1;
 }
 
