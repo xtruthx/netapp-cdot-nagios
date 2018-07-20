@@ -173,6 +173,7 @@ my $s = NaServer->new( $Hostname, 1, 110 );
 $s->set_transport_type("HTTPS");
 $s->set_style("LOGIN");
 $s->set_admin_user( $Username, $Password );
+$s->set_timeout(10);
 
 # if more than max luns are read
 my $iterator = NaElement->new("lun-get-iter");

@@ -37,6 +37,7 @@ my $s = NaServer->new( $Hostname, 1, 3 );
 $s->set_transport_type("HTTPS");
 $s->set_style("LOGIN");
 $s->set_admin_user( $Username, $Password );
+$s->set_timeout(10);
 
 my $iterator = NaElement->new("aggr-get-iter");
 my $tag_elem = NaElement->new("tag");
