@@ -176,7 +176,7 @@ if (@old_snapshots) {
             print "$snap ($busy_snapshots{$snap})\n";
         }
     }
-    exit 1;
+    exit 0;
 }
 else {
     if (!%busy_snapshots){
