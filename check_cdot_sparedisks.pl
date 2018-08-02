@@ -85,13 +85,13 @@ while(defined($next)){
 
 if ($not_zeroed){
     print "WARNING: $not_zeroed spare disk(s) not zeroed\n";
-    exit 2;
+    exit 1;
 } elsif($not_assigned){
 	print "INFO: $not_assigned disk(s) not assigned\n";
-	exit 2;
+	exit 0;
 } elsif($spare_counter eq 0){
 	print "CRITICAL: number of spare disks is 0\n";
-}
+	exit 2;
 } else {
     print "OK: All spare disks zeroed\n";
     exit 0;
