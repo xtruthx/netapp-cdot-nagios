@@ -167,8 +167,8 @@ while(defined($next)){
 given ($Plugin) {
     when("power"){
         if ($sum_failed_power) {
-            print "CRITICAL: $sum_failed_power failed power supplie(s): $failed_node\n";
-            exit 2;
+            print "WARNING: $sum_failed_power failed power supplie(s): $failed_node\n";
+            exit 1;
         } else {
             print "OK: No failed power supplies\n";
             exit 0;
@@ -176,8 +176,8 @@ given ($Plugin) {
     }
     when("fan"){
         if ($sum_failed_fan) {
-            print "CRITICAL: $sum_failed_fan failed fan(s): $failed_node\n";
-            exit 2;
+            print "WARNING: $sum_failed_fan failed fan(s): $failed_node\n";
+            exit 1;
         } else {
             print "OK: No failed fans\n";
             exit 0;
@@ -186,7 +186,7 @@ given ($Plugin) {
     when("nvram"){
         if ($sum_failed_nvram) {
             print "WARNING: $sum_failed_nvram failed nvram(s): $failed_node\n";
-            exit 2;
+            exit 1;
         } else {
             print "OK: No failed nvram\n";
             exit 0;
@@ -194,8 +194,8 @@ given ($Plugin) {
     }
     when("temp"){
         if ($sum_failed_temp) {
-            print "CRITICAL: Temperature Overheating: $failed_node\n";
-            exit 2;
+            print "WARNING: Temperature Overheating: $failed_node\n";
+            exit 1;
         } else {
             print "OK: Temperature OK\n";
             exit 0;
@@ -203,8 +203,8 @@ given ($Plugin) {
     }
     when("health"){
 	    if ($sum_failed_health){
-            print "CRITICAL: Health Status Critical: $failed_node\n";
-            exit 2;
+            print "WARNING: Health Status Critical: $failed_node\n";
+            exit 1;
         } else {
             print "OK: Health Status OK\n";
             exit 0;
