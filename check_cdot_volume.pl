@@ -1,5 +1,4 @@
-##!/usr/bin/perl
-#!/perl/bin/perl
+#!/usr/bin/perl
 
 # nagios: -epn
 # --
@@ -14,8 +13,7 @@
 use strict;
 use warnings;
 
-## use lib "/usr/lib/netapp-manageability-sdk/lib/perl/NetApp";
-use lib "C:/Users/thereseh/Documents/netapp-manageability-sdk-9.3/lib/perl/NetApp";
+use lib "/usr/lib/netapp-manageability-sdk/lib/perl/NetApp";
 
 use NaServer;
 use NaElement;
@@ -199,7 +197,6 @@ $InodeCritical = 85 unless $InodeCritical;
 $SnapWarning = 75 unless $SnapWarning;
 $SnapCritical = 90 unless $SnapCritical;
 $SnapIgnore = "false" unless $SnapIgnore;
-$StateCritical = "offline" unless $StateCritical;
 
 my ($crit_msg, $warn_msg, $ok_msg);
 # Store all perf data points for output at end
@@ -245,6 +242,7 @@ $xi13->child_add_string('files-total','<files-total>');
 $xi13->child_add_string('files-used','<files-used>');
 
 my $xi_state = new NaElement('volume-state-attributes');
+print "[DEBUG] : $xi_state to set 'volume-state-attributes' ";
 $xi1->child_add($xi_state);
 $xi_state->child_add_string('state','<state>');
 
