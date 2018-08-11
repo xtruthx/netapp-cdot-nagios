@@ -193,8 +193,8 @@ Error('Option --password needed!') unless $Password;
 $perf = 0 unless $perf;
 
 # Set some conservative default thresholds
-$SizeWarning = 75 unless $SizeWarning;
-$SizeCritical = 90 unless $SizeCritical;
+$SizeWarning = 90 unless $SizeWarning;
+$SizeCritical = 95 unless $SizeCritical;
 $InodeWarning = 65 unless $InodeWarning;
 $InodeCritical = 85 unless $InodeCritical;
 $SnapWarning = 75 unless $SnapWarning;
@@ -364,7 +364,7 @@ while(defined($next)){
 			}	
 			$perfdata{$vol_name}{'autosize_grow'}=$autogrow_percent;
 			
-			print "AUTOSIZE: ".$autogrow_percent."\n";
+			# print "AUTOSIZE: ".$autogrow_percent."\n";
 		} else {
 			print "CRITICAL: no volume autosize info could be retrieved \n";
 		}
