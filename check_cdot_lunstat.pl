@@ -225,7 +225,7 @@ while(defined($next)){
 	my $luns = $output->child_get("attributes-list");
 
 	unless($luns){
-	    print "CRITICAL: no lun matching this name\n";
+	    print "INFO: no lun matching this name\n";
 	    exit 2;
 	}
 	
