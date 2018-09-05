@@ -103,6 +103,7 @@ foreach my $node (@node_result){
         }
 
         my $link_status = $cf_output->child_get_string("interconnect-links");
+        print $link_status."\n";
         $link_status = (split(/[()]/, $link_status))[1];
 
         if(grep(/down/, $link_status)){
