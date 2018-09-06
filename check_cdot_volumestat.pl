@@ -249,13 +249,28 @@ while(defined($next)){
         if (!$vserver_name) { print Dumper($vserver_name); }
 
         my $vol_name = "$vserver_name/" . $vol_info->child_get_string("name");
-        if (!$vserver_name) { print Dumper($vol_name); }
+        if (!$vol_name) { print Dumper($vol_name); }
 
 		my $vol_state_info = $vol->child_get("volume-state-attributes");
-        if (!$vol_state_info) { print Dumper($vol_state_info); }
 
-		my $vol_state = $vol_state_info->child_get_string("state");
-        if (!$vol_state) { print Dumper($vol_state); }
+        my $vol_state;
+
+        if (!$vol_state_info) {
+            $h_warn_crit_info->{$vol_name}->{'volume_state'}="unknown";
+
+            if($Volume) {
+                push (@ok_msg, "Volume $vol_name is offline.");   
+            } else {
+                push (@ok_msg, "Volume $vol_name is offline (mirror volume?).\n");                  
+            }
+
+            $vol_state = "unknown";
+        } else {
+            $vol_state = $vol_state_info->child_get_string("state");
+            if (!$vol_state) { print Dumper($vol_state); }
+        }
+
+
 
         if($Volume && $Vserver) {
             if($vserver_name ne $Vserver) {
@@ -293,7 +308,7 @@ while(defined($next)){
                 push (@ok_msg, "Volume $vol_name is $vol_state");   
             }
             elsif(!@ok_msg) {
-                push (@ok_msg, "All volumes are $vol_state");                    
+                push (@ok_msg, "All volumes are $vol_state\n");                    
             }
         }
 
@@ -301,7 +316,6 @@ while(defined($next)){
 	}
 	$next = $output->child_get_string("next-tag");
 }
-
 
 
 # Build perf data string for output
