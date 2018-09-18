@@ -33,6 +33,7 @@ GetOptions(
     'H|hostname=s' => \my $Hostname,
     'u|username=s' => \my $Username,
     'p|password=s' => \my $Password,
+    's|state-not-critical=s' => \my $StateNotCritical,
     'P|perf'     => \my $perf,
     'exclude=s'	 =>	\my @excludelistarray,
     'regexp'            => \my $regexp,
@@ -52,14 +53,14 @@ sub Error {
     exit 2;
 }
 
-# html output containing the cluster nodes and their status
+# html output containing the cluster and its status
 # _c = warning in yellow
 # rest = safe in green
 sub draw_html_table {
 	my ($hrefInfo) = @_;
-	my @headers = qw(clusternode state);
+	my @headers = qw(cluster state);
 	# define columns that will be filled and shown
-	my @columns = qw(clusternode_state);
+	my @columns = qw(cluster_state);
 	my $html_table="";
 	$html_table .= "<table class=\"common-table\" style=\"border-collapse:collapse; border: 1px solid black;\">";
 	$html_table .= "<tr>";
@@ -67,20 +68,22 @@ sub draw_html_table {
 		$html_table .= "<th style=\"text-align: left; padding-left: 4px; padding-right: 6px;\">".$_."</th>";
 	}
 	$html_table .= "</tr>";
-	foreach my $node (sort {lc $a cmp lc $b} keys %$hrefInfo) {
+	foreach my $cluster (sort {lc $a cmp lc $b} keys %$hrefInfo) {
 		$html_table .= "<tr>";
 		$html_table .= "<tr style=\"border: 1px solid black;\">";
-		$html_table .= "<td style=\"text-align: left; padding-left: 4px; padding-right: 6px; background-color: #acacac;\">".$node."</td>";
+		$html_table .= "<td style=\"text-align: left; padding-left: 4px; padding-right: 6px; background-color: #acacac;\">".$cluster."</td>";
 		# loop through all attributes defined in @columns
 		foreach my $attr (@columns) {
-			if ($attr eq "clusternode_state") {
-                if (defined $hrefInfo->{$node}->{"clusternode_state_c"}){
-					$html_table .= "<td class=\"state-critical\" style=\"text-align: left; padding-left: 4px; padding-right: 6px; background-color: #f83838\">".$hrefInfo->{$node}->{$attr}."</td>";
+			if ($attr eq "cluster_state") {
+                if (defined $hrefInfo->{$cluster}->{"cluster_state_c"}){
+					$html_table .= "<td class=\"state-critical\" style=\"text-align: left; padding-left: 4px; padding-right: 6px; background-color: #f83838\">".$hrefInfo->{$cluster}->{$attr}."</td>";
+                } elsif (defined $hrefInfo->{$cluster}->{"cluster_state_w"}){
+					$html_table .= "<td class=\"state-warning\" style=\"text-align: left; padding-left: 4px; padding-right: 6px; background-color:  #FFFF00\">".$hrefInfo->{$cluster}->{$attr}."</td>";
 				} else {
-					$html_table .= "<td class=\"state-ok\" style=\"text-align: left; padding-left: 4px; padding-right: 6px; background-color: #33ff00\">".$hrefInfo->{$node}->{$attr}."</td>";
+					$html_table .= "<td class=\"state-ok\" style=\"text-align: left; padding-left: 4px; padding-right: 6px; background-color: #33ff00\">".$hrefInfo->{$cluster}->{$attr}."</td>";
 				}
 			} else {
-				$html_table .= "<td style=\"text-align: left; padding-left: 4px; padding-right: 6px;\">".$hrefInfo->{$node}->{$attr}."</td>";
+				$html_table .= "<td style=\"text-align: left; padding-left: 4px; padding-right: 6px;\">".$hrefInfo->{$cluster}->{$attr}."</td>";
 			}
 		}
 		$html_table .= "</tr>";
@@ -156,70 +159,61 @@ Error('Option --password needed!') unless $Password;
 $perf = 0 unless $perf;
 
 # Set some default thresholds
-my $StateCritical = "false";
+$StateNotCritical = "normal" unless $StateNotCritical;
 
-my ($crit_msg, $ok_msg);
+my ($crit_msg, $warn_msg, $ok_msg);
 # Store all perf data points for output at end
 my %perfdata=();
 my $h_warn_crit_info={};
-my $node_count = 0;
+my $cluster_count = 0;
 
 my $s = NaServer->new( $Hostname, 1, 110 );
 $s->set_transport_type("HTTPS");
 $s->set_style("LOGIN");
 $s->set_admin_user( $Username, $Password );
 
-### add primary cluster info to query
-# if more than max nodes are read
-my $iterator = NaElement->new("cluster-node-get-iter");
-my $tag_elem = NaElement->new("tag");
-$iterator->child_add($tag_elem);
+# if more than max clusters are read
+my $iterator = NaElement->new("metrocluster-get");
+# my $tag_elem = NaElement->new("tag");
+# $iterator->child_add($tag_elem);
 
-# get all node names
+# get all cluster names
 my $xi = new NaElement('desired-attributes');
 $iterator->child_add($xi);
-my $xi1 = new NaElement('cluster-node-info');
+my $xi1 = new NaElement('metrocluster-info');
 $xi->child_add($xi1);
-$xi1->child_add_string('node-name','<name>');
 
-# get node state
-$xi1->child_add_string('is-node-healthy','<state>');
+# get local cluster name
+$xi1->child_add_string('local-cluster-name','<name>');
 
-# get node eligibility
-$xi1->child_add_string('is-node-eligible','<eligible>');
+# get local cluster state
+$xi1->child_add_string('local-mode','<state>');
 
-my $xi4 = new NaElement('query');
-$iterator->child_add($xi4);
-my $xi5 = new NaElement('cluster-node-info');
-$xi4->child_add($xi5);
+# get remote cluster name
+$xi1->child_add_string('remote-cluster-name','<name>');
+
+# get remote cluster state
+$xi1->child_add_string('remote-mode','<state>');
+
+# my $xi4 = new NaElement('query');
+# $iterator->child_add($xi4);
+# my $xi5 = new NaElement('cluster-node-info');
+# $xi4->child_add($xi5);
 
 # if($Vserver){
 #     $xi5->child_add_string('vserver-name',$Vserver);
 # }
 
-my $next = "";
+# my $next = "";
 
-### add peer cluster to query
-my $peeriterator = NaElement->new("cluster-peer-get-iter");
-my $peertag_elem = NaElement->new("tag");
-$peeriterator->child_add($peertag_elem);
+my (@crit_msg,@warn_msg,@ok_msg);
 
-# get peer cluster health
-my $yi = new NaElement('desired-attributes');
-$peeriterator->child_add($yi);
-my $yi1 = new NaElement('cluster-peer-info');
-$yi->child_add($yi1);
-$yi1->child_add_string('is-cluster-healthy','<peerstate>');
+# while(defined($next)){
+#     unless($next eq ""){
+#         $tag_elem->set_content($next);    
+#     }
 
-
-my (@crit_msg, @ok_msg);
-
-while(defined($next)){
-    unless($next eq ""){
-        $tag_elem->set_content($next);    
-    }
-
-    $iterator->child_add_string("max-records", 100);
+    # $iterator->child_add_string("max-records", 100);
     my $output = $s->invoke_elem($iterator);
 
 	if ($output->results_errno != 0) {
@@ -227,105 +221,116 @@ while(defined($next)){
 	    print "UNKNOWN: $r\n";
 	    exit 3;
 	}
+
+	my $clusters = $output->child_get("attributes");
+
+	# unless($clusters){
+	#     print "CRITICAL: no cluster matching this name\n";
+	#     exit 2;
+	# }
 	
+	my @result = $clusters->children_get();
 
-	my $nodes = $output->child_get("attributes-list");
+    my %clusterdown = (
+        'unknown' => '1',
+        'not_reachable' => '1',
+        );
 
-	unless($nodes){
-	    print "CRITICAL: no node matching this name\n";
-	    exit 2;
-	}
-	
-	my @result = $nodes->children_get();
+	foreach my $cluster (@result){
 
-	foreach my $node (@result){
+        my $cluster_name = $cluster->child_get_string("local-cluster-name");
+		my $cluster_state = $cluster->child_get_string("local-mode");
+        my $remote_cluster_name = $cluster->child_get_string("remote-cluster-name");
+		my $remote_cluster_state = $cluster->child_get_string("remote-mode");
 
-        my $node_name = $node->child_get_string("node-name");
-        my $node_eligible = $node->child_get_string("is-node-eligible");
-		my $node_state = $node->child_get_string("is-node-healthy");
-
-        # if node should be excluded from check, ignore and next
-        next if exists $Excludelist{$node_name};
+        # if cluster should be excluded from check, ignore and next
+        next if exists $Excludelist{$cluster_name};
         
         if ($regexp and $excludeliststr) {
-            if ($node_name =~ m/$excludeliststr/) {
+            if ($cluster_name =~ m/$excludeliststr/) {
                 next;
             }
         }
 
-        # if node health is "false", set it to critical
-		if ($node_state eq $StateCritical){
+        # if cluster status is not normal, set it to critical
+		if ($cluster_state ne $StateNotCritical){
+            if ( $clusterdown{$cluster_state} ) {
+                # critical if in unknown, not_reachable, not_configured state
+                my $crit_msg = "Local Cluster $cluster_name";
 
-			my $crit_msg = "Node $node_name";
+                $perfdata{$cluster_name}{'cluster_state'}=$cluster_state;
+                $crit_msg .= " is in $cluster_state state";
 
-			$perfdata{$node_name}{'node_state'}=$node_state;
-			$crit_msg .= "is not healthy";
-
-			$h_warn_crit_info->{$node_name}->{'node_state_c'} = 1;
-			$h_warn_crit_info->{$node_name}->{'node_state'}=$node_state;
-			
-			$crit_msg .= ".";
-			push (@crit_msg, "$crit_msg" );
-        } else {
-            $h_warn_crit_info->{$node_name}->{'node_state'}=$node_state;
-            if(!@ok_msg) {
-                push (@ok_msg, "All cluster nodes are healthy is $node_state.\n");                    
-            }
-        }
-
-		$node_count++;
-	}
-	$next = $output->child_get_string("next-tag");
-}
-
-my $peeroutput = $s->invoke_elem($peeriterator);
-
-if ($peeroutput->results_errno != 0) {
-    my $peer_r = $peeroutput->results_reason();
-    print "UNKNOWN: $peer_r\n";
-    exit 3;
-}
-
-my $peer = $peeroutput->child_get("attributes-list");
-
-unless($peer){
-    print "CRITICAL: no node matching this name\n";
-    exit 2;
-}
-
-my @peer_result = $peer->children_get();
-
-# print Dumper(@peer_result);
-
-foreach my $peer (@peer_result){
-    my $peer_state = $peer->child_get_string("is-cluster-healthy");
-    my $cluster_name = $peer->child_get_string("cluster-name");
-    
-    if ($peer_state eq $StateCritical){
-
-                my $crit_msg = "Cluster $cluster_name";
-
-                $perfdata{$cluster_name}{'peer_state'}=$peer_state;
-                $crit_msg .= "is not healthy";
-
-                $h_warn_crit_info->{$cluster_name}->{'peer_state_c'} = 1;
-                $h_warn_crit_info->{$cluster_name}->{'peer_state'}=$peer_state;
+                $h_warn_crit_info->{$cluster_name}->{'cluster_state_c'} = 1;
+                $h_warn_crit_info->{$cluster_name}->{'cluster_state'}=$cluster_state;
                 
                 $crit_msg .= ".";
                 push (@crit_msg, "$crit_msg" );
             } else {
-                $h_warn_crit_info->{$cluster_name}->{'peer_state'}=$peer_state;
-                push (@ok_msg, "Peer cluster $cluster_name: healthy is $peer_state.\n");                    
+                # warn if in switchover, waiting_for_switchback, partial_switchover, partial_switchback state
+                my $warn_msg = "Local Cluster $cluster_name";
+
+                $perfdata{$cluster_name}{'cluster_state'}=$cluster_state;
+                $warn_msg .= " is in $cluster_state state";
+
+                $h_warn_crit_info->{$cluster_name}->{'cluster_state_w'} = 1;
+                $h_warn_crit_info->{$cluster_name}->{'cluster_state'}=$cluster_state;
+                
+                $warn_msg .= ".";
+                push (@warn_msg, "$warn_msg" );
             }
-}
+        } else {
+            $h_warn_crit_info->{$cluster_name}->{'cluster_state'}=$cluster_state;
+            if(!@ok_msg) {
+                push (@ok_msg, "The cluster is in $cluster_state state.\n");                    
+            }
+        }
+
+        # second queries to check for the remote cluster
+        if ($remote_cluster_state ne $StateNotCritical){
+            if ( $clusterdown{$remote_cluster_state} ) {
+                # critical if in unknown, not_reachable, not_configured state
+                my $crit_msg = "Remote Cluster $remote_cluster_name";
+
+                $perfdata{$remote_cluster_name}{'remote_cluster_state'}=$remote_cluster_state;
+                $crit_msg .= " is in $remote_cluster_state state";
+
+                $h_warn_crit_info->{$remote_cluster_name}->{'remote_cluster_state_c'} = 1;
+                $h_warn_crit_info->{$remote_cluster_name}->{'remote_cluster_state'}=$remote_cluster_state;
+                
+                $crit_msg .= ".";
+                push (@crit_msg, "$crit_msg" );
+            } else {
+                # warn if in switchover, waiting_for_switchback, partial_switchover, partial_switchback state
+                my $warn_msg = "\n Remote cluster $remote_cluster_name";
+
+                $perfdata{$remote_cluster_name}{'remote_cluster_state'}=$remote_cluster_state;
+                $warn_msg .= " is in $remote_cluster_state state";
+
+                $h_warn_crit_info->{$remote_cluster_name}->{'remote_cluster_state_w'} = 1;
+                $h_warn_crit_info->{$remote_cluster_name}->{'remote_cluster_state'}=$remote_cluster_state;
+                
+                $warn_msg .= ".";
+                push (@warn_msg, "$warn_msg" );
+            }
+        } else {
+            $h_warn_crit_info->{$remote_cluster_name}->{'remote_cluster_state'}=$remote_cluster_state;
+            push (@ok_msg, "The remote cluster is in $remote_cluster_state state.\n");                    
+        }
+
+		$cluster_count++;
+	}
+# 	$next = $output->child_get_string("next-tag");
+# }
+
 
 # Build perf data string for output
-my $perfdataglobalstr=sprintf("node_count::check_cdot_node_count::count=%d;;;0;;", $node_count);
+my $perfdataglobalstr=sprintf("cluster_count::check_cdot_cluster_count::count=%d;;;0;;", $cluster_count);
 my $perfdatavolstr="";
-foreach my $node ( keys(%perfdata) ) {
-	# DS[1] -$node state
-	if( $perfdata{$node}{'node_state'} ) {
-		$perfdatavolstr.=sprintf(" node_state=%s", $perfdata{$node}{'node_state'} );
+foreach my $cluster ( keys(%perfdata) ) {
+	# DS[1] -$cluster state
+	if( $perfdata{$cluster}{'cluster_state'} ) {
+		$perfdatavolstr.=sprintf(" cluster_state=%s", $perfdata{$cluster}{'cluster_state'} );
 	}
 }
 
@@ -348,6 +353,20 @@ if(scalar(@crit_msg) ){
 	my $strHTML = draw_html_table($h_warn_crit_info);
     print $strHTML if $output_html; 
 	exit 2;
+} elsif(scalar(@warn_msg) ){
+    print "WARN: ";
+    print join (" ", @warn_msg);
+    if ($perf) {
+                if($perfdatadir) {
+                        perfdata_to_file($STARTTIME, $perfdatadir, $hostdisplay, $perfdataservicedesc, $perfdataallstr);
+                        print "|$perfdataglobalstr\n";
+                } else {
+                        print "|$perfdataallstr\n";
+                }
+        } else {
+                print "\n";
+        }
+    exit 1;
 } elsif(scalar(@ok_msg) ){
     print "OK: ";
     print join (" ", @ok_msg);
@@ -363,7 +382,7 @@ if(scalar(@crit_msg) ){
         }
     exit 0;
 } else {
-    print "WARNING: no node found\n";
+    print "WARNING: no cluster found\n";
     exit 1;
 }
 
@@ -378,7 +397,7 @@ check_cdot_clusterstat - Check Cluster state
 =head1 SYNOPSIS
 
 check_cdot_clusterstat.pl -H HOSTNAME -u USERNAME -p PASSWORD \
-           STATE_CRITICAL \
+           [--state-not-critical STATE-NOT-CRITICAL] \
            [--perfdatadir DIR] [--perfdataservicedesc SERVICE-DESC] \
 		   [--hostdisplay HOSTDISPLAY] \
 		   [--snap-ignore] [-P] [--exclude]
@@ -402,6 +421,10 @@ The Login Username of the NetApp to monitor
 =item -p | --password PASSWORD
 
 The Login Password of the NetApp to monitor
+
+=item --state-not-critical STATE-NOT-CRITICAL
+
+The Critical threshold for cluster state.
 
 =item -P | --perf
 
