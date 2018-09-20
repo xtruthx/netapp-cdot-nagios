@@ -250,7 +250,7 @@ sub humanScale {
     my ($metric) = @_;
     my $unit='B';
     my @units = qw( KB MB GB TB PB EB );
-    while ($metric gt 1100) {
+    while ($metric > 1100) {
 	if (scalar(@units)<1) {
 	    # Hit our max scaling factor - bail out
 	    last;
