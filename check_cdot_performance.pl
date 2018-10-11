@@ -294,7 +294,12 @@ while(defined($next)){
         } else {
             $h_warn_crit_info->{$disk_name}->{'average_latency'}=$average_latency;
             if(!@ok_msg) {
-                push (@ok_msg, "All disks are in normal condition.\n");                    
+                if ($Disk) {
+                    push (@ok_msg, "Disk $disk_name is in normal condition.\n");  
+                } else {
+                    push (@ok_msg, "All disks are in normal condition.\n");   
+                }
+                                 
             }
         }
 
