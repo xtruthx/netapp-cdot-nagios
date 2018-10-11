@@ -172,8 +172,9 @@ while(defined($next)){
             printf("Found quota for %s on %s\n", $quotaUser, $volume) if ($verbose);
             $target = sprintf("%s/%s", $volume, $quotaUser);
         } else {
-            $target = $getQuota->child_get_string('quota-target');
+            $target = $getQuota->child_get_string('quota-target') unless $getQuota->child_get_string('quota-target') eq "*";
         }
+
         printf ("Quota %s: %s %s %s %s\n", $target, $diskLimit, $diskUsed, $fileLimit, $filesUsed) if ($verbose);
         my $diskPercent = ($diskUsed/$diskLimit*100);
 
@@ -220,30 +221,31 @@ foreach my $vol ( keys(%perfdata) ) {
 	0, $perfdata{$vol}{'byte_total'} );
 }
 
+
 if(scalar(@crit_msg) ){
     print "CRITICAL:\n";
-    print join ("", @crit_msg, @warn_msg, @ok_msg);
+    print join ("", @crit_msg, "WARNING:\n", @warn_msg, "OK:\n", @ok_msg);
     if ($perf) {
         print "|$perfdatastr\n";
     }
     exit 2;
 } elsif(scalar(@warn_msg) ){
     print "WARNING:\n";
-    print join ("", @crit_msg, @warn_msg, @ok_msg);
+    print join ("", @warn_msg, "OK:\n", @ok_msg);
     if ($perf) {
         print "|$perfdatastr\n";        
     }
     exit 1;
 } elsif(scalar(@ok_msg) ){
     print "OK:\n";
-    print join ("", @crit_msg, @warn_msg, @ok_msg);
+    print join ("", @ok_msg);
     if ($perf) {
         print "|$perfdatastr\n";
     }
     exit 0;
 } else {
-    print "WARNING: no online volume found\n";
-    exit 1;
+    print "INFO: no online volume found\n";
+    exit 0;
 }
 
 sub humanScale {
