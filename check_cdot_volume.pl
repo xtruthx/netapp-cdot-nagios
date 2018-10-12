@@ -15,6 +15,7 @@ use strict;
 use warnings;
 
 use lib "/usr/lib/netapp-manageability-sdk/lib/perl/NetApp";
+
 use NaServer;
 use NaElement;
 use Getopt::Long qw(:config no_ignore_case);
@@ -39,7 +40,7 @@ GetOptions(
     'V|volume=s'            => \my $Volume,
     'vserver=s'             => \my $Vserver,
     'exclude=s'	            =>	\my @excludelistarray,
-    'regexp'                => \my $regexp,
+    'regexp=s'                => \my $regexp,
     'perfdatadir=s'         => \my $perfdatadir,
     'perfdataservicedesc=s' => \my $perfdataservicedesc,
     'hostdisplay=s'         => \my $hostdisplay,
@@ -285,6 +286,16 @@ while(defined($next)) {
                 next;
             }
         }
+
+		next if exists $Excludelist{$vol_name};
+
+		if ($excludeliststr ne "") {
+			next if $vol_name =~ m/$excludeliststr/;
+		}
+		
+		if (defined($regexp)) {
+			next if $vol_name =~ m/$regexp/;
+		}
 	
 	    my $inode_info = $vol->child_get( "volume-inode-attributes" );
 	    
@@ -295,13 +306,6 @@ while(defined($next)) {
 			
 			my $inode_percent = sprintf("%.3f", $inode_used/$inode_total*100);
 			
-			next if exists $Excludelist{$vol_name};
-		
-            if ($regexp and $excludeliststr) {
-                if ($vol_name =~ m/$excludeliststr/) {
-                    next;
-                }
-            }
 	
 			my $vol_space = $vol->child_get( "volume-space-attributes" );
 			my $percent = $vol_space->child_get_int( "percentage-size-used" );
