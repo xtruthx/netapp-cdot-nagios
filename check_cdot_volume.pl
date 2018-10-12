@@ -40,7 +40,7 @@ GetOptions(
     'V|volume=s'            => \my $Volume,
     'vserver=s'             => \my $Vserver,
     'exclude=s'	            =>	\my @excludelistarray,
-    'regexp=s'                => \my $regexp,
+    'regexp=s'              => \my @regexlistarray,
     'perfdatadir=s'         => \my $perfdatadir,
     'perfdataservicedesc=s' => \my $perfdataservicedesc,
     'hostdisplay=s'         => \my $hostdisplay,
@@ -50,6 +50,10 @@ GetOptions(
 my %Excludelist;
 @Excludelist{@excludelistarray}=();
 my $excludeliststr = join "|", @excludelistarray;
+
+my %Regexlist;
+@Regexlist{@regexlistarray}=();
+my $regexliststr = join "|", @regexlistarray;
 
 sub Error {
     print "$0: ".$_[0]."\n";
@@ -293,8 +297,8 @@ while(defined($next)) {
 			next if $vol_name =~ m/$excludeliststr/;
 		}
 		
-		if (defined($regexp)) {
-			next if $vol_name =~ m/$regexp/;
+		if (defined($regexliststr)) {
+			next if $vol_name =~ m/$regexliststr/;
 		}
 	
 	    my $inode_info = $vol->child_get( "volume-inode-attributes" );
