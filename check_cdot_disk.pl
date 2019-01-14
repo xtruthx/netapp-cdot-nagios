@@ -14,7 +14,6 @@ use strict;
 use warnings;
 
 use lib "/usr/lib/netapp-manageability-sdk/lib/perl/NetApp";
-
 use NaServer;
 use NaElement;
 use Getopt::Long qw(:config no_ignore_case);
@@ -61,7 +60,8 @@ my $disk_count = 0;
 my @failed_disks;
 my @not_zeroed_disks;
 my @unassigned_disks;
-my %inventory = ( 'Spare', 0, 'Rebuilding', 0, 'Aggregate', 0, 'Failed', 0, 'Not_zeroed', 0, 'Unassigned', 0);
+my @maintenance_disks;
+my %inventory = ( 'Spare', 0, 'Rebuilding', 0, 'Aggregate', 0, 'Failed', 0, 'Not_zeroed', 0, 'Unassigned', 0, 'Maintenance', 0);
 
 while(defined($next)){
     unless($next eq ""){
@@ -120,6 +120,9 @@ while(defined($next)){
 		} elsif( $container eq 'unassigned' ){
 			push @unassigned_disks, $disk_name;
 			$inventory{'Unassigned'}++;
+		} elsif( $container eq 'maintenance' ){
+			push @maintenance_disks, $disk_name;
+			$inventory{'Maintenance'}++;
 	    } elsif ( $container eq 'aggregate' ) {
 	    	# Dig deeper
 			my $aggr_info = $raid_type->child_get('disk-aggregate-info');
@@ -150,12 +153,20 @@ while(defined($next)){
 }
 
 my $perfdatastr='';
-$perfdatastr = sprintf(" | Aggregate=%d Disks; Spare=%d Disks; Rebuilding=%d Disks; Failed=%d Disks",
-    $inventory{'Aggregate'}, $inventory{'Spare'}, $inventory{'Rebuilding'}, $inventory{'Failed'}
+$perfdatastr = sprintf("| Aggregate=%d Disks; Spare=%d Disks; Rebuilding=%d Disks; Maintenance=%d Disks; Failed=%d Disks",
+    $inventory{'Aggregate'}, $inventory{'Spare'}, $inventory{'Rebuilding'}, $inventory{'Maintenance'}, $inventory{'Failed'}
 ) if ($perf);
 
-if ( scalar @failed_disks >= $critical) {
-	print "CRITICAL: \n" . @failed_disks . " failed disk(s):\n" . join( "\n", @failed_disks . $perfdatastr ."\n";
+if ( scalar @failed_disks >= $critical || $inventory{'Spare'} < 100 ) {
+	print "CRITICAL: \n";
+	if ( scalar @failed_disks >= $critical ) {
+		print @failed_disks . " failed disk(s):\n" . join( "\n", @failed_disks );
+	}
+
+	if ( $inventory{'Spare'} < 100 ) {
+		print "\nNo spare disks found.";
+	}
+	print "\n\n$perfdatastr" ;
     exit 2;
 }
 if ( scalar @failed_disks >= $warning || scalar @not_zeroed_disks >= $warning || scalar @unassigned_disks >= $warning ) {
@@ -168,6 +179,9 @@ if ( scalar @failed_disks >= $warning || scalar @not_zeroed_disks >= $warning ||
 	}
 	if ( scalar @unassigned_disks >= $warning ) {
 		print "\n\n" . @unassigned_disks . " unassigned disk(s):\n" . join( "\n", @unassigned_disks );
+	}
+	if ( scalar @maintenance_disks >= $warning ) {
+		print "\n\n" . @maintenance_disks . " disk(s) in maintenance:\n" . join( "\n", @maintenance_disks );
 	}
 
 	print $perfdatastr ."\n";
