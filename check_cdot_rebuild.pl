@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr /bin/perl
 
 # nagios: -epn
 # --
@@ -14,6 +14,7 @@ use strict;
 use warnings;
 
 use lib "/usr/lib/netapp-manageability-sdk/lib/perl/NetApp";
+
 use NaServer;
 use NaElement;
 use Getopt::Long qw(:config no_ignore_case);
@@ -95,7 +96,7 @@ if(@failed_aggrs){
     print "WARNING: aggregate(s) rebuilding: ";
     print join(", ",@failed_aggrs);
     print "\n";
-    exit 2;
+    exit 1;
 } else {
     print "OK: no aggregate(s) rebuilding\n";
     exit 0;
