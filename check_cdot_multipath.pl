@@ -55,10 +55,12 @@ if($config_state eq "configured"){
 
     my $type = $mcc_info->child_get_string("configuration-type");
 
-    if($type eq "stretch"){
+    if ($type eq "stretch") {
         $must_paths = 2;
-    } elsif($type eq "fabric"){
+    } elsif ($type eq "fabric") {
         $must_paths = 8;
+    } elsif ($type eq "two_node_fabric") {
+        $must_paths = 1;
     } else {
         $must_paths = 4;
     }
@@ -102,10 +104,18 @@ while(defined($next)){
             my $disk_path_name = $path->child_get_string("disk-name");
             my @split = split(/:/,$disk_path_name);
 
-            if((@split eq 2) && ($path_count ne $must_paths)){
-                unless($path_count > $must_paths){
-                    push @failed_disks, $disk_name;
-                }
+            if ($must_paths > 1) {
+                if((@split eq 2) && ($path_count ne $must_paths)){
+                    unless($path_count > $must_paths){
+                        push @failed_disks, $disk_name;
+                    }
+                }      
+            } else {
+                if((@split eq 1) && ($path_count ne $must_paths)){
+                    unless($path_count > $must_paths){
+                        push @failed_disks, $disk_name;
+                    }
+                }     
             }
         }
 	}
@@ -116,7 +126,7 @@ if (@failed_disks) {
     print 'WARNING: disk(s) not multipath: ' . join( ', ', @failed_disks ) . "\n";
     exit 2;
 } else {
-    print "OK: All disks multipath\n";
+    print "OK: All disks multipath or with one path as configured.\n";
     exit 0;
 }
 
