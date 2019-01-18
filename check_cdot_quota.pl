@@ -152,7 +152,7 @@ while(defined($next)){
         my $filesUsed = $getQuota->child_get_string('files-used');
         my $volume = $getQuota->child_get_string('volume');
         my $type = $getQuota->child_get_string('quota-type');
-        my $target;
+        my $target = "";
 
         # if Volume quotas should be excluded from check, ignore and next
         next if exists $Excludelist{$volume};
