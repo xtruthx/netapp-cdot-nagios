@@ -199,11 +199,15 @@ $xi1->child_add_string('disk-name','<disk-name>');
 
 my $xi2 = new NaElement('disk-stats-info');
 $xi1->child_add($xi2);
-
-# $xi1->child_add_string('disk-stats-info','<disk-stats-info>');
-
 # get average latency
 $xi2->child_add_string('average-latency','<average-latency>');
+
+
+my $xi3 = new NaElement('disk-raid-info');
+$xi1->child_add($xi3);
+# get container type to later filter out unassigned disks
+$xi3->child_add_string('container-type','<container-type>');
+
 
 # query for specific disk
 my $xi4 = new NaElement('query');
@@ -250,6 +254,10 @@ while(defined($next)){
         my $disk_info = $disk->child_get( "disk-stats-info" );
         my $average_latency = $disk_info->child_get_string( "average-latency" );
 
+        my $raid_type = $disk->child_get( "disk-raid-info" );
+        my $container = $raid_type->child_get_string( "container-type" );
+
+
         # if disk should be excluded from check, ignore and next
         next if exists $Excludelist{$disk_name};
         
@@ -258,6 +266,9 @@ while(defined($next)){
                 next;
             }
         }
+
+        # skip if disk is unassigned
+        next if ($container eq 'unassigned');
 
 
         # if latency is higher than threshold, set it to critical
