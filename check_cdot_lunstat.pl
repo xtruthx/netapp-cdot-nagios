@@ -16,10 +16,9 @@ use strict;
 use warnings;
 
 use lib "/usr/lib/netapp-manageability-sdk/lib/perl/NetApp";
-
-
 use NaServer;
 use NaElement;
+use Data::Dumper;
 use Getopt::Long qw(:config no_ignore_case);
 
 # High resolution alarm, sleep, gettimeofday, interval timers
@@ -34,7 +33,7 @@ GetOptions(
     'H|hostname=s' => \my $Hostname,
     'u|username=s' => \my $Username,
     'p|password=s' => \my $Password,
-	'state-not-critical=s' => \my $StateNotCritical,
+	'state-not-warning=s' => \my $StateNotWarning,
     'P|perf'     => \my $perf,
     'v|volume-name=s'   => \my $Volume,
     'vserver=s'  => \my $Vserver,
@@ -58,7 +57,7 @@ sub Error {
 }
 
 # html output containing the luns and their status
-# _c = critical in red
+# _w = warning in red
 # rest = safe in green
 sub draw_html_table {
 	my ($hrefInfo) = @_;
@@ -79,8 +78,8 @@ sub draw_html_table {
 		# loop through all attributes defined in @columns
 		foreach my $attr (@columns) {
 			if ($attr eq "lun_state") {
-				if (defined $hrefInfo->{$lun}->{"lun_state_c"}){
-					$html_table .= "<td class=\"state-critical\" style=\"text-align: left; padding-left: 4px; padding-right: 6px; background-color: #f83838\">".$hrefInfo->{$lun}->{$attr}."</td>";
+				if (defined $hrefInfo->{$lun}->{"lun_state_w"}){
+					$html_table .= "<td class=\"state-warning\" style=\"text-align: left; padding-left: 4px; padding-right: 6px; background-color: #FFFF00\">".$hrefInfo->{$lun}->{$attr}."</td>";
 				} else {
 					$html_table .= "<td class=\"state-ok\" style=\"text-align: left; padding-left: 4px; padding-right: 6px; background-color: #33ff00\">".$hrefInfo->{$lun}->{$attr}."</td>";
 				}
@@ -161,9 +160,9 @@ Error('Option --password needed!') unless $Password;
 $perf = 0 unless $perf;
 
 # Set some conservative default thresholds
-$StateNotCritical = "online" unless $StateNotCritical;
+$StateNotWarning = "online" unless $StateNotWarning;
 
-my ($crit_msg, $warn_msg, $ok_msg);
+my ($warn_msg, $ok_msg);
 # Store all perf data points for output at end
 my %perfdata=();
 my $h_warn_crit_info={};
@@ -174,6 +173,42 @@ $s->set_transport_type("HTTPS");
 $s->set_style("LOGIN");
 $s->set_admin_user( $Username, $Password );
 $s->set_timeout(20);
+
+# get vserver subtype and check which are mcc destination (subtype != sync_source, operational_state = 'stopped')
+my $mcc_target_check = NaElement->new("vserver-get-iter");
+
+my $xo = new NaElement("desired-attributes");
+$mcc_target_check->child_add($xo);
+my $desired_attributes = new NaElement("vserver-info");
+$xo->child_add($desired_attributes);
+$desired_attributes->child_add_string("vserver-name",'<vserver-name>');
+$desired_attributes->child_add_string("vserver-type",'<vserver-type>');
+$desired_attributes->child_add_string("vserver-subtype",'<vserver-subtype>');
+$desired_attributes->child_add_string("operational-state",'<operational-state>');
+
+my $vserver_api_invoke = $s->invoke_elem($mcc_target_check);
+my $vservers = $vserver_api_invoke->child_get("attributes-list");
+my @result = $vservers->children_get();
+
+my @svm_whitelist;
+
+foreach my $svm (@result){
+    my $vserver_name = $svm->child_get_string("vserver-name");
+    my $vserver_type = $svm->child_get_string("vserver-type");
+
+    if ($vserver_type eq 'data') {
+        my $vserver_state = $svm->child_get_string("operational-state");
+        my $vserver_subtype = $svm->child_get_string("vserver-subtype");
+
+        if ($vserver_state eq "running" && $vserver_subtype eq "default") {
+            # create a list of all svms that are not metrocluster destinations
+            push @svm_whitelist, $vserver_name;
+        }
+    }
+}
+
+# turn array into hash for easier check later
+# my %svm_whitelist = map { $_ => 1 } @svm_whitelist;
 
 # if more than max luns are read
 my $iterator = NaElement->new("lun-get-iter");
@@ -206,7 +241,7 @@ if($Vserver){
 my $next = "";
 
 # ?
-my (@crit_msg, @warn_msg, @ok_msg);
+my (@warn_msg, @ok_msg);
 
 while(defined($next)){
     unless($next eq ""){
@@ -226,7 +261,7 @@ while(defined($next)){
 
 	unless($luns){
 	    print "INFO: no lun matching this name\n";
-	    exit 2;
+	    exit 0;
 	}
 	
 	my @result = $luns->children_get();
@@ -257,7 +292,7 @@ while(defined($next)){
         }
 
         # if LUN should be excluded from check, ignore and next
-        next if exists $Excludelist{$lun_path};
+        next if ( grep( /^$vserver_name$/, @svm_whitelist) );
         
         if ($regexp and $excludeliststr) {
             if ($lun_path =~ m/$excludeliststr/) {
@@ -266,17 +301,17 @@ while(defined($next)){
         }
 
         # if lun is not online, set state to critical
-		if ($lun_state ne $StateNotCritical){
+		if ($lun_state ne $StateNotWarning){
 
-			my $crit_msg = "LUN $lun_path ";
+			my $warn_msg = "LUN $lun_path ";
 
 			$perfdata{$lun_path}{'lun_state'}=$lun_state;
-			$crit_msg .= "is $lun_state";
-			$h_warn_crit_info->{$lun_path}->{'lun_state_c'} = 1;
+			$warn_msg .= "is $lun_state";
+			$h_warn_crit_info->{$lun_path}->{'lun_state_w'} = 1;
 			$h_warn_crit_info->{$lun_path}->{'lun_state'}=$lun_state;
 			
-			$crit_msg .= ". ";
-			push (@crit_msg, "$crit_msg" );
+			$warn_msg .= ". ";
+			push (@warn_msg, "$warn_msg" );
 		} else {
             # lun is online, set state to ok
             $h_warn_crit_info->{$lun_path}->{'lun_state'}=$lun_state;
@@ -309,23 +344,7 @@ foreach my $lun ( keys(%perfdata) ) {
 $perfdatalunstr =~ s/^\s+//;
 my $perfdataallstr = "$perfdataglobalstr $perfdatalunstr";
 
-if(scalar(@crit_msg) ){
-    print "CRITICAL: ";
-    print join (" ", @crit_msg, @warn_msg);
-    if ($perf) { 
-		if($perfdatadir) {
-			perfdata_to_file($STARTTIME, $perfdatadir, $hostdisplay, $perfdataservicedesc, $perfdataallstr);
-			print "|$perfdataglobalstr\n";
-		} else {
-			print "|$perfdataallstr\n";
-		}
-	} else {
-		print "\n";
-	}
-	my $strHTML = draw_html_table($h_warn_crit_info);
-    print $strHTML if $output_html; 
-	exit 2;
-} elsif(scalar(@warn_msg) ){
+if(scalar(@warn_msg) ){
     print "WARNING: ";
     print join (" ", @warn_msg);
     if ($perf) {
