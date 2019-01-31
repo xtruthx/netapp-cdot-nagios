@@ -157,13 +157,13 @@ $perfdatastr = sprintf("| Aggregate=%d Disks; Spare=%d Disks; Rebuilding=%d Disk
     $inventory{'Aggregate'}, $inventory{'Spare'}, $inventory{'Rebuilding'}, $inventory{'Maintenance'}, $inventory{'Failed'}
 ) if ($perf);
 
-if ( scalar @failed_disks >= $critical || $inventory{'Spare'} < 100 ) {
+if ( scalar @failed_disks >= $critical || $inventory{'Spare'} < 1 ) {
 	print "CRITICAL: \n";
 	if ( scalar @failed_disks >= $critical ) {
 		print @failed_disks . " failed disk(s):\n" . join( "\n", @failed_disks );
 	}
 
-	if ( $inventory{'Spare'} < 100 ) {
+	if ( $inventory{'Spare'} < 1 ) {
 		print "\nNo spare disks found.";
 	}
 	print "\n\n$perfdatastr" ;
