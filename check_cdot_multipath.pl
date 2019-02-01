@@ -17,6 +17,7 @@ use strict;
 use warnings;
 
 use lib "/usr/lib/netapp-manageability-sdk/lib/perl/NetApp";
+
 use NaServer;
 use NaElement;
 use Getopt::Long;
@@ -107,13 +108,13 @@ while(defined($next)){
             if ($must_paths > 1) {
                 if((@split eq 2) && ($path_count ne $must_paths)){
                     unless($path_count > $must_paths){
-                        push @failed_disks, $disk_name;
+                        push @failed_disks, "$disk_name: $path_count instead of $must_paths paths\n";
                     }
                 }      
             } else {
                 if((@split eq 1) && ($path_count ne $must_paths)){
                     unless($path_count > $must_paths){
-                        push @failed_disks, $disk_name;
+                        push @failed_disks, "$disk_name: $path_count instead of $must_paths paths\n";
                     }
                 }     
             }
