@@ -18,6 +18,7 @@ use lib "/usr/lib/netapp-manageability-sdk/lib/perl/NetApp";
 use NaServer;
 use NaElement;
 use Getopt::Long qw(:config no_ignore_case);
+use List::Util qw(max);
 
 my $critical = 2;
 my $warning = 1;
@@ -158,12 +159,12 @@ $perfdatastr = sprintf("| Aggregate=%d Disks; Spare=%d Disks; Rebuilding=%d Disk
     $inventory{'Aggregate'}, $inventory{'Spare'}, $inventory{'Rebuilding'}, $inventory{'Maintenance'}, $inventory{'Failed'}
 ) if ($perf);
 
-my $ret = 0;
+my @ret = 0;
 
 if(($Diskcount) && ($Diskcount ne $disk_count)){
     my $diff = $Diskcount-$disk_count;
     print "CRITICAL: $diff disk(s) missing".$perfdatastr."\n";
-    $ret = 2;
+    push @ret, 2;
 }
 
 if ( scalar @failed_disks >= $critical || $inventory{'Spare'} < 1 ) {
@@ -176,7 +177,7 @@ if ( scalar @failed_disks >= $critical || $inventory{'Spare'} < 1 ) {
 		print "\nNo spare disks found.";
 	}
 	print "\n\n$perfdatastr" ;
-    $ret = 2;
+    push @ret, 2;
 }
 if ( scalar @failed_disks >= $warning || scalar @not_zeroed_disks >= $warning || scalar @maintenance_disks >= $warning ) {
 	print "WARNING: ";
@@ -191,7 +192,7 @@ if ( scalar @failed_disks >= $warning || scalar @not_zeroed_disks >= $warning ||
 	}
 
 	print $perfdatastr ."\n";
-    $ret = 1;
+    push @ret, 1;
 } else {
     print "OK: All $disk_count disks OK".$perfdatastr."\n";
 	if ( scalar @unassigned_disks > 0 ) {
@@ -200,9 +201,11 @@ if ( scalar @failed_disks >= $warning || scalar @not_zeroed_disks >= $warning ||
 	if ( $inventory{'Spare'} > 0 ) {
 		print "\n\n" . $inventory{'Spare'} . " spare disk(s):\n";
 	}   
-	$ret = 0;
+	push @ret, 0;
 }
-exit $ret;
+
+# print max(@ret);
+exit max( @ret );
 
 
 
