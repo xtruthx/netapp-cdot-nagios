@@ -124,15 +124,13 @@ while(defined($next)){
         my $ifgroup = $port->child_get_string("ifgrp-port");
 
         # if the port is down, send a warning
-        if($link_status eq "down") {
-            my $warn_msg = "$port_name (node $node_name) link-status is $link_status";
+        if($link_status eq "down" && $ifgroup) {
+            # my $warn_msg = "$port_name (node $node_name) link-status is $link_status";
 
             # if the port is in an ifgrp, return its name
-            if($ifgroup) {
-                $warn_msg = "$port_name (node $node_name; interface group $ifgroup) link-status is $link_status";
-            }
 
-            push (@warn_msg, "$warn_msg\n");
+                $warn_msg = "$port_name (node $node_name; interface group $ifgroup) link-status is $link_status";
+                push (@warn_msg, "$warn_msg\n");
         } elsif ($link_status eq "unknown") {
             my $warn_msg = "$port_name (node $node_name) is $link_status";
             push (@warn_msg, "$warn_msg\n");
@@ -146,8 +144,11 @@ while(defined($next)){
     $next = $output->child_get_string("next-tag");
 }
 
+my $size;
+
 if(scalar(@crit_msg) ){
-    print "CRITICAL:\n";
+    $size = @crit_msg;
+    print "CRITICAL: $size ports are down\n";
     print join ("", @crit_msg);
     # if ($perf) { 
 	# 	if($perfdatadir) {
@@ -161,7 +162,8 @@ if(scalar(@crit_msg) ){
 	# }
 	exit 2;
 } if(scalar(@warn_msg) ){
-    print "WARNING:\n";
+    $size = @warn_msg;
+    print "WARNING: $size ports are down\n";
     print join ("", @warn_msg);
     # if ($perf) {
     #             if($perfdatadir) {
