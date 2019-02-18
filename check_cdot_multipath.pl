@@ -26,6 +26,7 @@ GetOptions(
     'hostname=s' => \my $Hostname,
     'username=s' => \my $Username,
     'password=s' => \my $Password,
+    'onepath-config'=> \my $Exception,
     'help|?'     => sub { exec perldoc => -F => $0 or die "Cannot execute perldoc: $!\n"; },
 ) or Error("check_cdot_aggr: Error in command line arguments\n");
 
@@ -46,11 +47,19 @@ $s->set_admin_user( $Username, $Password );
 
 # MCC check
 my $mcc_iterator = NaElement->new("metrocluster-get");
+my $desired_attributes = NaElement->new("desired-attributes");
+my $metrocluster_info = NaElement->new("metrocluster-info");
+$metrocluster_info->child_add('local-cluster-name','local-cluster-name');
+$metrocluster_info->child_add('local-configuration-state','local-configuration-state');
+$metrocluster_info->child_add('configuration-type','local-configuration-type');
+
 my $mcc_response = $s->invoke_elem($mcc_iterator);
 
 my $mcc = $mcc_response->child_get("attributes");
 my $mcc_info = $mcc->child_get("metrocluster-info");
 my $config_state = $mcc_info->child_get_string("local-configuration-state");
+my $mcc_name = $mcc_info->child_get_string("local-cluster-name");
+
 
 if($config_state eq "configured"){
 
@@ -61,13 +70,21 @@ if($config_state eq "configured"){
     } elsif ($type eq "fabric") {
         $must_paths = 8;
     } elsif ($type eq "two_node_fabric") {
+        print $Exception;
         $must_paths = 1;
     } else {
         $must_paths = 4;
     }
 } else {
-    $must_paths = 4;
+    if($Exception) {
+        $must_paths = 1;
+    } else {
+        $must_paths = 4;        
+    }
+
 }
+
+print $must_paths;
 
 my $iterator = NaElement->new("storage-disk-get-iter");
 my $tag_elem = NaElement->new("tag");
@@ -75,6 +92,7 @@ $iterator->child_add($tag_elem);
 
 my $next = "";
 my @failed_disks;
+my @info_disks;
 
 while(defined($next)){
     unless($next eq ""){
@@ -112,10 +130,11 @@ while(defined($next)){
                     }
                 }      
             } else {
-                if((@split eq 1) && ($path_count ne $must_paths)){
+                if(($path_count ne $must_paths)){
                     unless($path_count > $must_paths){
-                        push @failed_disks, "$disk_name: $path_count instead of $must_paths paths\n";
+                        push @failed_disks, "$disk_name: $path_count instead of $must_paths path\n";
                     }
+                    push @info_disks, "$disk_name: $path_count instead of $must_paths path\n";
                 }     
             }
         }
@@ -124,10 +143,15 @@ while(defined($next)){
 }
 
 if (@failed_disks) {
-    print 'WARNING: disk(s) not multipath: ' . join( ', ', @failed_disks ) . "\n";
+    print "\nWARNING: disk(s) not multipath:\n" . join( " ", @failed_disks );
     exit 2;
 } else {
-    print "OK: All disks multipath or with one path as configured.\n";
+    if(@info_disks) {
+        print "\nOK: disk(s) having more than 1 path:\n" . join( " ", @info_disks );
+    } else {
+        print "\nOK: All disks multipath or with one path as configured.\n";
+    }
+    
     exit 0;
 }
 
