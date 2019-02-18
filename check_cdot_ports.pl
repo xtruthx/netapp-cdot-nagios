@@ -73,6 +73,7 @@ $desired_attributes->child_add($netportinfo);
 $netportinfo->child_add_string('link-status','link-status');
 $netportinfo->child_add_string('port','port');
 $netportinfo->child_add_string('node','node');
+$netportinfo->child_add_string('ifgrp-port','ifgrp-port');
 
 # specify physical ports only or specific portname provided
 my $xi1 = new NaElement('query');
@@ -116,13 +117,20 @@ while(defined($next)){
 
     foreach my $port (@result){
 
+        # get all acquired information
         my $port_name = $port->child_get_string("port");
         my $node_name = $port->child_get_string("node");
         my $link_status = $port->child_get_string("link-status");
+        my $ifgroup = $port->child_get_string("ifgrp-port");
 
-        if($link_status eq "down") {
-            my $crit_msg = "$port_name (node $node_name) link-status is $link_status";
-            push (@crit_msg, "$crit_msg\n");
+        # if the port is down, send a warning
+        if($link_status eq "down" && $ifgroup) {
+            # my $warn_msg = "$port_name (node $node_name) link-status is $link_status";
+
+            # if the port is in an ifgrp, return its name
+
+                $warn_msg = "$port_name (node $node_name; interface group $ifgroup) link-status is $link_status";
+                push (@warn_msg, "$warn_msg\n");
         } elsif ($link_status eq "unknown") {
             my $warn_msg = "$port_name (node $node_name) is $link_status";
             push (@warn_msg, "$warn_msg\n");
@@ -136,8 +144,11 @@ while(defined($next)){
     $next = $output->child_get_string("next-tag");
 }
 
+my $size;
+
 if(scalar(@crit_msg) ){
-    print "CRITICAL:\n";
+    $size = @crit_msg;
+    print "CRITICAL: $size ports are down\n";
     print join ("", @crit_msg);
     # if ($perf) { 
 	# 	if($perfdatadir) {
@@ -151,7 +162,8 @@ if(scalar(@crit_msg) ){
 	# }
 	exit 2;
 } if(scalar(@warn_msg) ){
-    print "WARNING:\n";
+    $size = @warn_msg;
+    print "WARNING: $size ports are down\n";
     print join ("", @warn_msg);
     # if ($perf) {
     #             if($perfdatadir) {
@@ -215,6 +227,18 @@ The Login Username of the NetApp to monitor
 =item --password PASSWORD
 
 The Login Password of the NetApp to monitor
+
+=item --port PORT
+
+The Name of the specific port to be checked
+
+=item --exclude
+
+Optional: The name of a port that has to be excluded from the checks (multiple exclude item for multiple volumes)
+
+=item --regexp
+
+Optional: Uses the input in "exclude" parameter as a regex filter for port names. A value must not be set.
 
 =item -help
 
