@@ -302,7 +302,8 @@ while(defined($next)){
 
 	unless($volumes){
 	    print "CRITICAL: no volume matching this name\n";
-	    exit 2;
+	    #exit 2;
+		last;
 	}
 	
 	my @result = $volumes->children_get();

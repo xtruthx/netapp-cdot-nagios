@@ -117,7 +117,14 @@ while(defined($next)){
         exit 3;
     }
 
-    my $volumes = $output->child_get("attributes-list");
+    #my $volumes = $output->child_get("attributes-list");
+
+    unless($volumes){
+        print "CRITICAL: no volume matching this name\n";
+        #exit 2;
+        last;
+    }
+
     my @result = $volumes->children_get();
 
     foreach my $vol (@result){
@@ -200,7 +207,7 @@ Checks that all the volumes have a SnapMirror configuration
 
 =item --hostname FQDN
 
-The Hostname of the NetApp to monitor (Cluster or Node MGMT)
+The Hostname of the NetApp to monitor
 
 =item --username USERNAME
 
