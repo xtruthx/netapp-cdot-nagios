@@ -504,7 +504,7 @@ while(defined($next)){
 					$warn_msg .= "Snapreserve: $snapusedpct%[>$SnapWarning%], ";
 					$h_warn_crit_info->{$vol_name}->{'snap_percent_w'} = 1;
 				}
-				if ($autogrow_percent > $AutosizeCritical) {
+				if ($autogrow_percent > $AutosizeWarning) {
 					$warn_msg .= "Autosize: $space_used/$autogrow_bytes, $autogrow_percent%[>$AutosizeWarning%], ";
 					$h_warn_crit_info->{$vol_name}->{'autosize_percent_w'} = 1;
 				}
