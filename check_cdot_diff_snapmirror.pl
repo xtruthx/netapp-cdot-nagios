@@ -117,7 +117,7 @@ while(defined($next)){
         exit 3;
     }
 
-    #my $volumes = $output->child_get("attributes-list");
+    my $volumes = $output->child_get("attributes-list");
 
     unless($volumes){
         print "CRITICAL: no volume matching this name\n";
