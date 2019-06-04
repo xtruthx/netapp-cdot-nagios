@@ -128,19 +128,18 @@ while(defined($next)){
     	
     	        if($state && ($state eq "online")){
     	
-    	            unless(($vol_name eq "vol0") || ($vol_name =~ m/root/) || ($vol_type eq "dp") || ($vol_name =~ m/^temp__/) || ($vol_name =~ m/^CC_snapprotect_SP/)){
+    	            unless(($vol_name eq "vol0") || ($vol_name =~ m/root/) || ($vol_name =~ m/^temp__/) || ($vol_name =~ m/^CC_snapprotect_SP/)){
     	
     	                my $space = $vol->child_get("volume-space-attributes");
     	                my $qos = $vol->child_get("volume-qos-attributes");
     	                my $guarantee = $space->child_get_string("space-guarantee");
                         
-                        if ($qossetting eq 1) {
+                        if (($qossetting eq 1) && ($vol_type ne "dp")) {
                             unless($qos){
     	                        push(@no_qos, $vol_name);
     	                    }
                         }
 
-    	
     	                unless($guarantee eq "none"){
     	                    push(@no_guarantee, $vol_name);
     	                }
