@@ -95,7 +95,7 @@ while(defined($next)){
             $tag_elem->set_content($next);
         }
 
-        $snap_iterator->child_add_string("max-records", '5000');
+        $snap_iterator->child_add_string("max-records", '2500');
         my $snap_output = $s->invoke_elem($snap_iterator);
 
         if ($snap_output->results_errno != 0) {
