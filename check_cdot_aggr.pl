@@ -2,7 +2,8 @@
 
 # nagios: -epn
 # --
-# check_cdot_aggr - Check Aggregate real Space Usage
+# check_cdot_aggr - Check Aggregate real Space Usage, State and rebuild status
+# Copyright (C) 2019 operational services GmbH & Co. KG
 # Copyright (C) 2013 noris network AG, http://www.noris.net/
 # --
 # This software comes with ABSOLUTELY NO WARRANTY. For details, see
@@ -26,6 +27,7 @@ GetOptions(
     'p|password=s' => \my $Password,
     'w|warning=i'  => \my $Warning,
     'c|critical=i' => \my $Critical,
+    'state-critical=s' => \my $StateCritical,
     'A|aggr=s'     => \my $Aggr,
     'P|perf'       => \my $perf,
     'exclude=s'  => \my @excludelistarray,
@@ -46,6 +48,8 @@ Error('Option --username needed!') unless $Username;
 Error('Option --password needed!') unless $Password;
 Error('Option --warning needed!')  unless $Warning;
 Error('Option --critical needed!') unless $Critical;
+
+$StateCritical = "offline" unless $StateCritical;
 
 my $perfmsg;
 my $critical = 0;
@@ -118,6 +122,7 @@ while(defined($next)){
 
         # include rebuild check
         my $raid = $aggr->child_get("aggr-raid-attributes");
+        my $aggr_state = $raid->child_get_string("state");
         my $plex_list=$raid->child_get("plexes");
         my @plexes = $plex_list->children_get();
 
@@ -153,24 +158,49 @@ while(defined($next)){
 	        my $bytestotal = $space->child_get_int("size-total");
             my $percent = $space->child_get_int("percent-used-capacity");
 
-            if($percent >= $Critical){
-                $critical++;
+            if($percent >= $Critical || $aggr_state eq $StateCritical){
+                if($percent >= $Critical) {
+                    $critical++;
                 
-                if($crit_msg){
-                    $crit_msg .= ", " . $aggr_name . " (" . $percent . "%)";
-                } else {
-                    $crit_msg .= $aggr_name . " (" . $percent . "%)";
+                    if($crit_msg){
+                        $crit_msg .= ", " . $aggr_name . " (" . $percent . "%)";
+                    } else {
+                        $crit_msg .= $aggr_name . " (" . $percent . "%)";
+                    }
                 }
 
-            } elsif ($percent >= $Warning){
+                if($aggr_state eq $StateCritical){
+                    if($crit_msg){
+                        $crit_msg .= ", " . $aggr_name . " is $aggr_state)";
+                    } else {
+                        $crit_msg .= $aggr_name . " is $aggr_state)";
+                    }
 
-                $warning++;
-
-                if ($warn_msg) {
-                    $warn_msg .= ", " . $aggr_name . " (" . $percent . "%)";
-                } else {
-                    $warn_msg .= $aggr_name . " (" . $percent . "%)";
+                    #$perfdata{$aggr_name}{'aggr_state'}=$aggr_state;
+                    $crit_msg .= ". ";
                 }
+            } elsif ($percent >= $Warning || $aggr_state ne "online"){
+                if($percent >= $Warning) {
+                    $warning++;
+
+                    if ($warn_msg) {
+                        $warn_msg .= ", " . $aggr_name . " (" . $percent . "%)";
+                    } else {
+                        $warn_msg .= $aggr_name . " (" . $percent . "%)";
+                    }                    
+                }
+
+                if($aggr_state ne "online"){
+                    if($warn_msg){
+                        $warn_msg .= ", " . $aggr_name . " is $aggr_state)";
+                    } else {
+                        $warn_msg .= $aggr_name . " is $aggr_state)";
+                    }
+
+                    #$perfdata{$aggr_name}{'aggr_state'}=$aggr_state;
+                    $warn_msg .= ". ";
+                }
+
             } else {
                 
                 $ok++;
