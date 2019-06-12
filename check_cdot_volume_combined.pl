@@ -43,6 +43,7 @@ GetOptions(
 	'autosize-warning=s' => \my $AutosizeWarning,
 	'autosize-critical=s' => \my $AutosizeCritical,
 	'state-critical=s' => \my $StateCritical,
+	'snapshot-limit=i' => \my $SnapshotLimit,
     'P|perf'     => \my $perf,
     'V|volume=s'   => \my $Volume,
     'vserver=s'  => \my $Vserver,
@@ -211,6 +212,7 @@ $SnapIgnore = "false" unless $SnapIgnore;
 $AutosizeWarning = 90 unless $AutosizeWarning;
 $AutosizeCritical = 95 unless $AutosizeCritical;
 $StateCritical = "offline" unless $StateCritical;
+$SnapshotLimit = 230 unless $SnapshotLimit;
 
 my ($crit_msg, $warn_msg, $ok_msg);
 # Store all perf data points for output at end
@@ -265,6 +267,11 @@ $xi14->child_add_string('maximum-size','<maximum-size>');
 my $xi_state = new NaElement('volume-state-attributes');
 $xi1->child_add($xi_state);
 $xi_state->child_add_string('state','<state>');
+
+# get volume snapshot count
+my $xi_snapshot = new NaElement('volume-snapshot-attributes');
+$xi1->child_add($xi_snapshot);
+$xi_snapshot->child_add_string('snapshot-count','<snapshot-count>');
 
 # query only volumes with given names
 my $xi4 = new NaElement('query');
@@ -425,6 +432,10 @@ while(defined($next)){
 				print "CRITICAL: no volume autosize info could be retrieved \n";
 			}
 
+			# get snapshot count for volume
+			my $vol_snapshot_info = $vol->child_get("volume-snapshot-attributes");
+			my $snapshot_count = $vol_snapshot_info->child_get_string("snapshot-count");
+
 			if($space_used >1024){
 				$space_used /= 1024;
 				$space_total /= 1024;
@@ -439,7 +450,7 @@ while(defined($next)){
 				$autogrow_bytes = sprintf("%.2f GB", $autogrow_bytes);
 			}
 
-			if(($percent>$SizeCritical) || ($inode_percent>$InodeCritical) || (($SnapIgnore eq "false") && ($snapusedpct > $SnapCritical) || ($autogrow_percent > $AutosizeCritical))) {
+			if(($percent>$SizeCritical) || ($inode_percent>$InodeCritical) || (($SnapIgnore eq "false") && ($snapusedpct > $SnapCritical)) || ($autogrow_percent > $AutosizeCritical) || ($snapshot_count > $SnapshotLimit)) {
 
 				$h_warn_crit_info->{$vol_name}->{'space_percent'}=$percent;
 				$h_warn_crit_info->{$vol_name}->{'inode_percent'}=$inode_percent;
@@ -480,6 +491,11 @@ while(defined($next)){
 					$h_warn_crit_info->{$vol_name}->{'autosize_percent_w'} = 1;
 				}
 
+				if ($snapshot_count > $SnapshotLimit) {
+					$crit_msg .= "Snapshots: $snapshot_count [>$SnapshotLimit], ";
+					#$h_warn_crit_info->{$vol_name}->{'autosize_percent_c'} = 1;
+				}
+
 				chop($crit_msg); chop($crit_msg); $crit_msg .= ")";
 				push (@crit_msg, "$crit_msg\n" );
 
@@ -516,7 +532,7 @@ while(defined($next)){
 				if ($SnapIgnore eq "true"){
 					push (@ok_msg, "$vol_name (Size: $space_used/$space_total, $percent%, Inodes: $inode_percent%, Maximum Autosize Grow: $autogrow_percent%)\n" );
 				} else {
-					push (@ok_msg, "$vol_name (Size: $space_used/$space_total, $percent%, Inodes: $inode_percent%, Snapreserve: $snapusedpct%, Maximum Autosize Grow: $autogrow_percent%)\n" );
+					push (@ok_msg, "$vol_name (Size: $space_used/$space_total, $percent%, Inodes: $inode_percent%, Snapreserve: $snapusedpct%, Maximum Autosize Grow: $autogrow_percent%), Snapshots: $snapshot_count\n" );
 				}
 			}
 
@@ -560,9 +576,13 @@ foreach my $vol ( keys(%perfdata) ) {
 	if( $perfdata{$vol}{'autosize_grow'} ) {
     	$perfdatavolstr.=sprintf(" autosize_grow=%d", $perfdata{$vol}{'autosize_grow'} );
 	}
-	# # DS[7] - Volume state
+	# DS[7] - Volume state
 	if( $perfdata{$vol}{'state'} ) {
 		$perfdatavolstr.=sprintf(" state=%s", $perfdata{$vol}{'state'} );
+	}
+	# DS[8] - Volume snapshot count
+	if( $perfdata{$vol}{'snapshot_count'} ) {
+		$perfdatavolstr.=sprintf(" state=%s", $perfdata{$vol}{'snapshot_count'} );
 	}
 }
 $perfdatavolstr =~ s/^\s+//;
@@ -702,6 +722,10 @@ The Critical threshold for autosize grow maximum. Defaults to 90%.
 =item --state-critical STATE_CRITICAL
 
 The Critical threshold for volume status. Default is "offline".
+
+=item --snapshot-limit SNAPSHOT_LIMIT
+
+The threshold for volume snapshot counts. Default is 230.
 
 =item -V | --volume VOLUME
 
