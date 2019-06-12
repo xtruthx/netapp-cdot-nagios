@@ -450,7 +450,7 @@ while(defined($next)){
 				$autogrow_bytes = sprintf("%.2f GB", $autogrow_bytes);
 			}
 
-			if(($percent>$SizeCritical) || ($inode_percent>$InodeCritical) || (($SnapIgnore eq "false") && ($snapusedpct > $SnapCritical)) || ($autogrow_percent > $AutosizeCritical) || ($snapshot_count > $SnapshotLimit)) {
+			if(($percent>$SizeCritical) || ($inode_percent>$InodeCritical) || (($SnapIgnore eq "false") && ($snapusedpct > $SnapCritical)) || ($autogrow_percent > $AutosizeCritical)) {
 
 				$h_warn_crit_info->{$vol_name}->{'space_percent'}=$percent;
 				$h_warn_crit_info->{$vol_name}->{'inode_percent'}=$inode_percent;
@@ -491,15 +491,10 @@ while(defined($next)){
 					$h_warn_crit_info->{$vol_name}->{'autosize_percent_w'} = 1;
 				}
 
-				if ($snapshot_count > $SnapshotLimit) {
-					$crit_msg .= "Snapshots: $snapshot_count [>$SnapshotLimit], ";
-					#$h_warn_crit_info->{$vol_name}->{'autosize_percent_c'} = 1;
-				}
-
 				chop($crit_msg); chop($crit_msg); $crit_msg .= ")";
 				push (@crit_msg, "$crit_msg\n" );
 
-			} elsif (($percent>$SizeWarning) || ($inode_percent>$InodeWarning) || (($SnapIgnore eq "false") && ($snapusedpct > $SnapWarning) || ($autogrow_percent > $AutosizeWarning))) {
+			} elsif (($percent>$SizeWarning) || ($inode_percent>$InodeWarning) || (($SnapIgnore eq "false") && ($snapusedpct > $SnapWarning)) || ($autogrow_percent > $AutosizeWarning) || ($snapshot_count > $SnapshotLimit)) {
 
 				$h_warn_crit_info->{$vol_name}->{'space_percent'}=$percent;
 				$h_warn_crit_info->{$vol_name}->{'inode_percent'}=$inode_percent;
@@ -523,6 +518,10 @@ while(defined($next)){
 				if ($autogrow_percent > $AutosizeWarning) {
 					$warn_msg .= "Autosize: $space_used/$autogrow_bytes, $autogrow_percent%[>$AutosizeWarning%], ";
 					$h_warn_crit_info->{$vol_name}->{'autosize_percent_w'} = 1;
+				}
+				if ($snapshot_count > $SnapshotLimit) {
+					$warn_msg .= "Snapshots: $snapshot_count [>$SnapshotLimit], ";
+					#$h_warn_crit_info->{$vol_name}->{'autosize_percent_c'} = 1;
 				}
 
 				chop($warn_msg); chop($warn_msg); $warn_msg .= ")";
