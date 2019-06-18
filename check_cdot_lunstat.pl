@@ -16,6 +16,7 @@ use strict;
 use warnings;
 
 use lib "/usr/lib/netapp-manageability-sdk/lib/perl/NetApp";
+
 use NaServer;
 use NaElement;
 use Data::Dumper;
@@ -172,7 +173,7 @@ my $s = NaServer->new( $Hostname, 1, 110 );
 $s->set_transport_type("HTTPS");
 $s->set_style("LOGIN");
 $s->set_admin_user( $Username, $Password );
-$s->set_timeout(20);
+$s->set_timeout(30);
 
 # get vserver subtype and check which are mcc destination (subtype != sync_source, operational_state = 'stopped')
 my $mcc_target_check = NaElement->new("vserver-get-iter");
@@ -248,7 +249,7 @@ while(defined($next)){
         $tag_elem->set_content($next);    
     }
 
-    $iterator->child_add_string("max-records", 100);
+    $iterator->child_add_string("max-records", 50);
     my $output = $s->invoke_elem($iterator);
 
 	if ($output->results_errno != 0) {
