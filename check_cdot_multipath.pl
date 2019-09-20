@@ -84,7 +84,6 @@ if($config_state eq "configured"){
 
 }
 
-print $must_paths;
 
 my $iterator = NaElement->new("storage-disk-get-iter");
 my $tag_elem = NaElement->new("tag");
