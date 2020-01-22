@@ -42,6 +42,7 @@ GetOptions(
     'perfdatadir=s' => \my $perfdatadir,
     'perfdataservicedesc=s' => \my $perfdataservicedesc,
     't|target=s'   => \my $Quota,
+    'vserver=s' => \my $Vserver,
     'v|verbose' => \my $verbose,
     'h|help'     => sub { exec perldoc => -F => $0 or die "Cannot execute perldoc: $!\n"; },
 ) or Error("$0: Error in command line arguments\n");
@@ -101,13 +102,17 @@ if ($Quota) {
     $quota_info->child_add_string('quota-target', $Quota);
 }
 
+if ($Vserver) {
+    $quota_info->child_add_string('vserver', $Vserver);
+}
+
 my $next = "";
 
 my (@crit_msg, @warn_msg, @ok_msg);
 
 while(defined($next)){
     unless($next eq ""){
-        $tag_elem->set_content($next);    
+        $tag_elem->set_content($next);
     }
     $iterator->child_add_string("max-records", 100);
     my $output = $s->invoke_elem($iterator);
@@ -164,15 +169,16 @@ while(defined($next)){
         }
 
         if ($type eq "user") {
-            my $qUsers = $getQuota->child_get('quota-users');
-            next unless ($qUsers);
-            my $qUser= $qUsers->child_get('quota-user');
-            next unless ($qUser);
-            my $quotaUser = $qUser->child_get_string('quota-user-name');
-            printf("Found quota for %s on %s\n", $quotaUser, $volume) if ($verbose);
-            $target = sprintf("%s/%s", $volume, $quotaUser);
-        } else {
-            $target = $getQuota->child_get_string('quota-target') unless $getQuota->child_get_string('quota-target') eq "*";
+        #     my $qUsers = $getQuota->child_get('quota-users');
+        #     next unless ($qUsers);
+        #     my $qUser= $qUsers->child_get('quota-user');
+        #     next unless ($qUser);
+        #     my $quotaUser = $qUser->child_get_string('quota-user-name');
+        #     printf("Found quota for %s on %s\n", $quotaUser, $volume) if ($verbose);
+        #     $target = sprintf("%s/%s", $volume, $quotaUser);
+        # } else {
+        #     $target = $getQuota->child_get_string('quota-target') unless $getQuota->child_get_string('quota-target') eq "*";
+            next;
         }
 
         printf ("Quota %s: %s %s %s %s\n", $target, $diskLimit, $diskUsed, $fileLimit, $filesUsed) if ($verbose);
@@ -216,6 +222,8 @@ while(defined($next)){
 my $perfdatastr="";
 foreach my $vol ( keys(%perfdata) ) {
     # DS[1] - Data space used
+    $perfdatastr.=sprintf(" %s_space_used=%dB;%d;%d;%d;%d", $vol, $perfdata{$vol}{'byte_used'},
+	$SizeWarning*$perfdata{$vol}{'byte_total'}/100, $SizeCritical*$perfdata{$vol}{'byte_total'}/100,
     $perfdatastr.=sprintf(" %s_space_used=%dBytes;%d;%d;%d;%d", $vol, $perfdata{$vol}{'byte_used'},
 	$CapacityWarning*$perfdata{$vol}{'byte_total'}/100, $CapacityCritical*$perfdata{$vol}{'byte_total'}/100,
 	0, $perfdata{$vol}{'byte_total'} );
@@ -289,7 +297,7 @@ if warning or critical thresholds are reached
 
 =item -H | --hostname FQDN
 
-The Hostname of the NetApp to monitor
+The Hostname of the NetApp to monitor (Cluster or Node MGMT)
 
 =item -u | --username USERNAME
 
