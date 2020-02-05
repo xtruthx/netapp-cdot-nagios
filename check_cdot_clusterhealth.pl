@@ -13,7 +13,9 @@
 
 use strict;
 use warnings;
+
 use lib "/usr/lib/netapp-manageability-sdk/lib/perl/NetApp";
+
 use NaServer;
 use NaElement;
 use Data::Dumper;
@@ -53,40 +55,40 @@ sub Error {
 # html output containing the node and its status
 # _c = warning in yellow
 # rest = safe in green
-sub draw_html_table {
-	my ($hrefInfo) = @_;
-	my @headers = qw(node state);
-	# define columns that will be filled and shown
-	my @columns = qw(node_state);
-	my $html_table="";
-	$html_table .= "<table class=\"common-table\" style=\"border-collapse:collapse; border: 1px solid black;\">";
-	$html_table .= "<tr>";
-	foreach (@headers) {
-		$html_table .= "<th style=\"text-align: left; padding-left: 4px; padding-right: 6px;\">".$_."</th>";
-	}
-	$html_table .= "</tr>";
-	foreach my $node (sort {lc $a cmp lc $b} keys %$hrefInfo) {
-		$html_table .= "<tr>";
-		$html_table .= "<tr style=\"border: 1px solid black;\">";
-		$html_table .= "<td style=\"text-align: left; padding-left: 4px; padding-right: 6px; background-color: #acacac;\">".$node."</td>";
-		# loop through all attributes defined in @columns
-		foreach my $attr (@columns) {
-			if ($attr eq "node_state") {
-                if (defined $hrefInfo->{$node}->{"node_state_c"}){
-					$html_table .= "<td class=\"state-critical\" style=\"text-align: left; padding-left: 4px; padding-right: 6px; background-color: #f83838\">".$hrefInfo->{$node}->{$attr}."</td>";
-				} else {
-					$html_table .= "<td class=\"state-ok\" style=\"text-align: left; padding-left: 4px; padding-right: 6px; background-color: #33ff00\">".$hrefInfo->{$node}->{$attr}."</td>";
-				}
-			} else {
-				$html_table .= "<td style=\"text-align: left; padding-left: 4px; padding-right: 6px;\">".$hrefInfo->{$node}->{$attr}."</td>";
-			}
-		}
-		$html_table .= "</tr>";
-	}
-	$html_table .= "</table>\n";
+# sub draw_html_table {
+# 	my ($hrefInfo) = @_;
+# 	my @headers = qw(node state);
+# 	# define columns that will be filled and shown
+# 	my @columns = qw(node_state);
+# 	my $html_table="";
+# 	$html_table .= "<table class=\"common-table\" style=\"border-collapse:collapse; border: 1px solid black;\">";
+# 	$html_table .= "<tr>";
+# 	foreach (@headers) {
+# 		$html_table .= "<th style=\"text-align: left; padding-left: 4px; padding-right: 6px;\">".$_."</th>";
+# 	}
+# 	$html_table .= "</tr>";
+# 	foreach my $node (sort {lc $a cmp lc $b} keys %$hrefInfo) {
+# 		$html_table .= "<tr>";
+# 		$html_table .= "<tr style=\"border: 1px solid black;\">";
+# 		$html_table .= "<td style=\"text-align: left; padding-left: 4px; padding-right: 6px; background-color: #acacac;\">".$node."</td>";
+# 		# loop through all attributes defined in @columns
+# 		foreach my $attr (@columns) {
+# 			if ($attr eq "node_state") {
+#                 if (defined $hrefInfo->{$node}->{"node_state_c"}){
+# 					$html_table .= "<td class=\"state-critical\" style=\"text-align: left; padding-left: 4px; padding-right: 6px; background-color: #f83838\">".$hrefInfo->{$node}->{$attr}."</td>";
+# 				} else {
+# 					$html_table .= "<td class=\"state-ok\" style=\"text-align: left; padding-left: 4px; padding-right: 6px; background-color: #33ff00\">".$hrefInfo->{$node}->{$attr}."</td>";
+# 				}
+# 			} else {
+# 				$html_table .= "<td style=\"text-align: left; padding-left: 4px; padding-right: 6px;\">".$hrefInfo->{$node}->{$attr}."</td>";
+# 			}
+# 		}
+# 		$html_table .= "</tr>";
+# 	}
+# 	$html_table .= "</table>\n";
 
-	return $html_table;
-}
+# 	return $html_table;
+# }
 
 # write performance data for plugin
 sub perfdata_to_file {
@@ -154,11 +156,11 @@ Error('Option --password needed!') unless $Password;
 $perf = 0 unless $perf;
 
 
-my ($crit_msg, $ok_msg);
+# my ($crit_msg, $ok_msg);
 my (@crit_msg, @ok_msg);
 # Store all perf data points for output at end
 my %perfdata=();
-my $h_warn_crit_info={};
+# my $h_warn_crit_info={};
 my $node_count = 0;
 
 my $s = NaServer->new( $Hostname, 1, 110 );
@@ -178,7 +180,10 @@ if ($nodeoutput->results_errno != 0) {
 my $nodes = $nodeoutput->child_get('attributes-list');    
 my @result = $nodes->children_get();
 
+my $cluster_size = @result;
+
 foreach my $node (@result) {
+    my ($crit_msg, $ok_msg);
     # get node related ha and state information
     my $node_info = $node->child_get('sfo-node-info');
     my @node_related_object = $node_info->children_get();
@@ -211,20 +216,20 @@ foreach my $node (@result) {
         $ok_msg = "$node_name (";
         
         if(($node_state_description !~ m/Connected/) || $node_current_mode ne 'ha') {
-            $crit_msg = "$node_name (";
 
             if($node_state_description !~ m/Connected/) {
                 $crit_msg .= "State: $node_state, Description: $node_state_description, ";
-                $h_warn_crit_info->{$node_name}->{'node_state_c'} = 1;
+                # $h_warn_crit_info->{$node_name}->{'node_state_c'} = 1;
             }
             if ($node_current_mode ne 'ha') {
                 $crit_msg .= "Current Mode: $node_current_mode, ";
-                $h_warn_crit_info->{$node_name}->{'node_mode_c'} = 1;
+                # $h_warn_crit_info->{$node_name}->{'node_mode_c'} = 1;
             }
         } else {
             $ok_msg .= "State: $node_state, ";
         }
     }
+
 
     # get takover related information
     my $takeover_info = $node->child_get('sfo-takeover-info');
@@ -242,20 +247,21 @@ foreach my $node (@result) {
         if(($takeover_reason) || ($takeover_of_reason) || ($takeover_by_reason)) {
             if($takeover_reason) {
                 $crit_msg .= "Reason for takeover: $takeover_reason, ";
-                $h_warn_crit_info->{$node_name}->{'node_takeover_c'} = 1;
+                # $h_warn_crit_info->{$node_name}->{'node_takeover_c'} = 1;
             }
             if($takeover_of_reason) {
                 $crit_msg .= "Reason why takeover of partner not possible: $takeover_of_reason, ";
-                $h_warn_crit_info->{$node_name}->{'node_takeover_of_c'} = 1;
+                # $h_warn_crit_info->{$node_name}->{'node_takeover_of_c'} = 1;
             }
             if($takeover_by_reason) {
                 $crit_msg .= "Reason why takeover by partner not possible: $takeover_by_reason, ";
-                $h_warn_crit_info->{$node_name}->{'node_takeover_by_c'} = 1;
+                # $h_warn_crit_info->{$node_name}->{'node_takeover_by_c'} = 1;
             }
         } else {
             $ok_msg .= "Takeover State: $takeover_state, Takeover of Partner: $takeover_of, Takeover by Partner: $takeover_by";
         }
     }
+    
 
     # get missing disk information
     my $missing_info = $node->child_get('sfo-storage-info');
@@ -269,41 +275,47 @@ foreach my $node (@result) {
         if(($local_missing_disks) || ($partner_missing_disks)) {
             if($local_missing_disks) {
                 $crit_msg .= "Disks local node is missing but partner node sees: $local_missing_disks, ";
-                $h_warn_crit_info->{$node_name}->{'node_missing_local_c'} = 1;
+                # $h_warn_crit_info->{$node_name}->{'node_missing_local_c'} = 1;
             }
             if($partner_missing_disks) {
                 $crit_msg .= "Disks partner node missing but local node sees: $partner_missing_disks, ";
-                $h_warn_crit_info->{$node_name}->{'node_missing_partner_c'} = 1;
+                # $h_warn_crit_info->{$node_name}->{'node_missing_partner_c'} = 1;
             }
         }
     }
 
-    # get storage failover options
-    my $failover_info = $node->child_get('sfo-options-info');
-    my @failover_object = $failover_info->children_get();
+    if($cluster_size <= 2) {
+        print "Cluster contains less than 2 nodes, cannot perform failover\n";
+    } else {
+        # get storage failover options
+        my $failover_info = $node->child_get('sfo-options-info');
+        my @failover_object = $failover_info->children_get();
 
-    foreach my $failover_options_info (@failover_object) {
-        $failover_enabled = $failover_options_info->child_get_string('failover-enabled');
-        $auto_giveback_enabled = $failover_options_info->child_get_string('auto-giveback-enabled');
+        foreach my $failover_options_info (@failover_object) {
+            $failover_enabled = $failover_options_info->child_get_string('failover-enabled');
+            $auto_giveback_enabled = $failover_options_info->child_get_string('auto-giveback-enabled');
 
-        # print $failover_enabled." ".$auto_giveback_enabled."\n";
-        if(($failover_enabled ne 'true') || ($auto_giveback_enabled ne 'true')) {
-            if($failover_enabled ne 'true') {
-                $crit_msg .= "Failover enabled: $failover_enabled, ";
-                $h_warn_crit_info->{$node_name}->{'node_failover_c'} = 1;
-            }
-            if($auto_giveback_enabled ne 'true') {
-                $crit_msg .= "Giveback enabled: $auto_giveback_enabled, ";
-                $h_warn_crit_info->{$node_name}->{'node_giveback_c'} = 1;
+            # print $failover_enabled." ".$auto_giveback_enabled."\n";
+            if(($failover_enabled ne 'true') || ($auto_giveback_enabled ne 'true')) {
+                if($failover_enabled ne 'true') {
+                    $crit_msg .= "Failover enabled: $failover_enabled, ";
+                    # $h_warn_crit_info->{$node_name}->{'node_failover_c'} = 1;
+                }
+                if($auto_giveback_enabled ne 'true') {
+                    $crit_msg .= "Giveback enabled: $auto_giveback_enabled, ";
+                    # $h_warn_crit_info->{$node_name}->{'node_giveback_c'} = 1;
+                }
             }
         }
     }
 
     # chop off last comma from critical message and push to array
     if ($crit_msg) {
-        chop($crit_msg); chop($crit_msg); $crit_msg .= ")";
+        $crit_msg = $node_name . " (" . $crit_msg; chop($crit_msg); chop($crit_msg); $crit_msg .= ")";
         push (@crit_msg, "$crit_msg");
     }
+    
+    $ok_msg .= ")";
     push (@ok_msg, "$ok_msg"); 
 
     # gather all data for perfdata output
@@ -369,8 +381,8 @@ if(scalar(@crit_msg) ){
 	} else {
 		print "\n";
 	}
-	my $strHTML = draw_html_table($h_warn_crit_info);
-    print $strHTML if $output_html; 
+	# my $strHTML = draw_html_table($h_warn_crit_info);
+    # print $strHTML if $output_html; 
 	exit 2;
 } elsif(scalar(@ok_msg) ){
     print "OK:\n";
