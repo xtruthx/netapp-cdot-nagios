@@ -156,7 +156,6 @@ Error('Option --password needed!') unless $Password;
 $perf = 0 unless $perf;
 
 
-# my ($crit_msg, $ok_msg);
 my (@crit_msg, @ok_msg);
 # Store all perf data points for output at end
 my %perfdata=();
@@ -263,25 +262,26 @@ foreach my $node (@result) {
                 $ok_msg .= "Takeover State: $takeover_state, Takeover of Partner: $takeover_of, Takeover by Partner: $takeover_by";
             }
         }
-    }
+    
 
-    # get missing disk information
-    my $missing_info = $node->child_get('sfo-storage-info');
-    my @missing_object = $missing_info->children_get();
+        # get missing disk information
+        my $missing_info = $node->child_get('sfo-storage-info');
+        my @missing_object = $missing_info->children_get();
 
-    foreach my $missing_disk_info (@missing_object) {
-        my $local_missing_disks = $missing_disk_info->child_get_string('local-missing-disks');
-        my $partner_missing_disks = $missing_disk_info->child_get_string('partner-missing-disks');
+        foreach my $missing_disk_info (@missing_object) {
+            my $local_missing_disks = $missing_disk_info->child_get_string('local-missing-disks');
+            my $partner_missing_disks = $missing_disk_info->child_get_string('partner-missing-disks');
 
-        #print $local_missing_disks." ".$partner_missing_disks."\n";
-        if(($local_missing_disks) || ($partner_missing_disks)) {
-            if($local_missing_disks) {
-                $crit_msg .= "Disks local node is missing but partner node sees: $local_missing_disks, ";
-                # $h_warn_crit_info->{$node_name}->{'node_missing_local_c'} = 1;
-            }
-            if($partner_missing_disks) {
-                $crit_msg .= "Disks partner node missing but local node sees: $partner_missing_disks, ";
-                # $h_warn_crit_info->{$node_name}->{'node_missing_partner_c'} = 1;
+            #print $local_missing_disks." ".$partner_missing_disks."\n";
+            if(($local_missing_disks) || ($partner_missing_disks)) {
+                if($local_missing_disks) {
+                    $crit_msg .= "Disks local node is missing but partner node sees: $local_missing_disks, ";
+                    # $h_warn_crit_info->{$node_name}->{'node_missing_local_c'} = 1;
+                }
+                if($partner_missing_disks) {
+                    $crit_msg .= "Disks partner node missing but local node sees: $partner_missing_disks, ";
+                    # $h_warn_crit_info->{$node_name}->{'node_missing_partner_c'} = 1;
+                }
             }
         }
     }
