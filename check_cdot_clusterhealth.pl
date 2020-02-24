@@ -230,38 +230,40 @@ foreach my $node (@result) {
         }
     }
 
+    if($cluster_size < 2) {
+        #print "Cluster contains less than 1 nodes, cannot perform takeover\n";
+    } else {
+        # get takover related information
+        my $takeover_info = $node->child_get('sfo-takeover-info');
+        my @takeover_related_object = $takeover_info->children_get();
 
-    # get takover related information
-    my $takeover_info = $node->child_get('sfo-takeover-info');
-    my @takeover_related_object = $takeover_info->children_get();
+        foreach my $takeover_related_info (@takeover_related_object) {
+            $takeover_state = $takeover_related_info->child_get_string('takeover-state');
+            my $takeover_reason = $takeover_related_info->child_get_string('takeover-reason');
+            $takeover_of = $takeover_related_info->child_get_string('takeover-of-partner-possible');
+            $takeover_by = $takeover_related_info->child_get_string('takeover-by-partner-possible');
+            my $takeover_of_reason = $takeover_related_info->child_get_string('takeover-of-partner-not-possible-reason');
+            my $takeover_by_reason = $takeover_related_info->child_get_string('takeover-by-partner-not-possible-reason');
 
-    foreach my $takeover_related_info (@takeover_related_object) {
-        $takeover_state = $takeover_related_info->child_get_string('takeover-state');
-        my $takeover_reason = $takeover_related_info->child_get_string('takeover-reason');
-        $takeover_of = $takeover_related_info->child_get_string('takeover-of-partner-possible');
-        $takeover_by = $takeover_related_info->child_get_string('takeover-by-partner-possible');
-        my $takeover_of_reason = $takeover_related_info->child_get_string('takeover-of-partner-not-possible-reason');
-        my $takeover_by_reason = $takeover_related_info->child_get_string('takeover-by-partner-not-possible-reason');
-
-        #print $takeover_state." ".$takeover_of." ".$takeover_by."\n";
-        if(($takeover_reason) || ($takeover_of_reason) || ($takeover_by_reason)) {
-            if($takeover_reason) {
-                $crit_msg .= "Reason for takeover: $takeover_reason, ";
-                # $h_warn_crit_info->{$node_name}->{'node_takeover_c'} = 1;
+            #print $takeover_state." ".$takeover_of." ".$takeover_by."\n";
+            if(($takeover_reason) || ($takeover_of_reason) || ($takeover_by_reason)) {
+                if($takeover_reason) {
+                    $crit_msg .= "Reason for takeover: $takeover_reason, ";
+                    # $h_warn_crit_info->{$node_name}->{'node_takeover_c'} = 1;
+                }
+                if($takeover_of_reason) {
+                    $crit_msg .= "Reason why takeover of partner not possible: $takeover_of_reason, ";
+                    # $h_warn_crit_info->{$node_name}->{'node_takeover_of_c'} = 1;
+                }
+                if($takeover_by_reason) {
+                    $crit_msg .= "Reason why takeover by partner not possible: $takeover_by_reason, ";
+                    # $h_warn_crit_info->{$node_name}->{'node_takeover_by_c'} = 1;
+                }
+            } else {
+                $ok_msg .= "Takeover State: $takeover_state, Takeover of Partner: $takeover_of, Takeover by Partner: $takeover_by";
             }
-            if($takeover_of_reason) {
-                $crit_msg .= "Reason why takeover of partner not possible: $takeover_of_reason, ";
-                # $h_warn_crit_info->{$node_name}->{'node_takeover_of_c'} = 1;
-            }
-            if($takeover_by_reason) {
-                $crit_msg .= "Reason why takeover by partner not possible: $takeover_by_reason, ";
-                # $h_warn_crit_info->{$node_name}->{'node_takeover_by_c'} = 1;
-            }
-        } else {
-            $ok_msg .= "Takeover State: $takeover_state, Takeover of Partner: $takeover_of, Takeover by Partner: $takeover_by";
         }
     }
-    
 
     # get missing disk information
     my $missing_info = $node->child_get('sfo-storage-info');
@@ -285,7 +287,7 @@ foreach my $node (@result) {
     }
 
     if($cluster_size <= 2) {
-        print "Cluster contains less than 2 nodes, cannot perform failover\n";
+        #print "Cluster contains less than 2 nodes, cannot perform failover\n";
     } else {
         # get storage failover options
         my $failover_info = $node->child_get('sfo-options-info');
