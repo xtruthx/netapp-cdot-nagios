@@ -42,6 +42,8 @@ GetOptions(
     'h|help'     => sub { exec perldoc => -F => $0 or die "Cannot execute perldoc: $!\n"; },
 ) or Error("$0: Error in command line arguments\n");
 
+my $version = "1.0.0";
+
 # get list of excluded elements
 my %Excludelist;
 @Excludelist{@excludelistarray}=();
@@ -369,6 +371,9 @@ foreach my $node ( keys(%perfdata) ) {
 
 $perfdatavolstr =~ s/^\s+//;
 my $perfdataallstr = "$perfdataglobalstr $perfdatavolstr";
+
+# Version output
+print "Script version: $version\n";
 
 if(scalar(@crit_msg) ){
     print "CRITICAL:\n";
