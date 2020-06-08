@@ -15,6 +15,7 @@ use strict;
 use warnings;
 
 use lib "/usr/lib/netapp-manageability-sdk/lib/perl/NetApp";
+
 use NaServer;
 use NaElement;
 use Getopt::Long;
@@ -22,9 +23,10 @@ use Getopt::Long;
 use Data::Dumper;
 
 GetOptions(
-    'hostname=s' => \my $Hostname,
+    'hostname|H=s' => \my $Hostname,
     'username=s' => \my $Username,
     'password=s' => \my $Password,
+    'interface-group=s' => \my $ifgrp,
     'help|?'     => sub { exec perldoc => -F => $0 or die "Cannot execute perldoc: $!\n"; },
 ) or Error( "$0: Error in command line arguments\n" );
 
@@ -35,6 +37,7 @@ sub Error {
 Error( 'Option --hostname needed!' ) unless $Hostname;
 Error( 'Option --username needed!' ) unless $Username;
 Error( 'Option --password needed!' ) unless $Password;
+Error( 'Option --interface-group needed!' ) unless $ifgrp;
 
 my $s = NaServer->new( $Hostname, 1, 3 );
 $s->set_transport_type( "HTTPS" );
@@ -59,13 +62,17 @@ if ($node_output->results_errno != 0) {
 my $heads = $node_output->child_get( "attributes-list" );
 my @result = $heads->children_get();
 
+# gelöschte ifgrp wird immer noch abgefragt
+# done --- human readable Skriptfolge aufschreiben
+# local cluster 2 node
+
 foreach my $head (@result) {
     my $node_name = $head->child_get_string( "node" );
 
     my $ifgrp_iterator = NaElement->new( "net-port-ifgrp-get" );
 
     $ifgrp_iterator->child_add_string( "node", $node_name );
-    $ifgrp_iterator->child_add_string( "ifgrp-name", "a0a" );
+    $ifgrp_iterator->child_add_string( "ifgrp-name", $ifgrp );
     my $ifgrp_output = $s->invoke_elem( $ifgrp_iterator );
 
     if ($ifgrp_output->results_errno != 0) {
@@ -307,6 +314,10 @@ The Login Username of the NetApp to monitor
 =item --password PASSWORD
 
 The Login Password of the NetApp to monitor
+
+=item --interface-group IFGROUP
+
+The interface group of the NetApp to monitor
 
 =item -help
 
