@@ -19,6 +19,8 @@ use NaServer;
 use NaElement;
 use Getopt::Long;
 use Data::Dumper;
+use Time::Piece;
+use Time::Seconds qw/ ONE_DAY /;
 
 GetOptions(
     'H|hostname=s' => \my $Hostname,
@@ -109,6 +111,13 @@ while(defined($next)){
 		my $status = $snap->child_get_string("relationship-status");
 		my $healthy = $snap->child_get_string("is-healthy");
 		my $lag = $snap->child_get_string("lag-time");
+
+        # #convert to readable
+        # my $seconds = $lag;
+        # my $hours = int( $seconds / (60*60) );
+        # my $mins = ( $seconds / 60 ) % 60;
+        # my $secs = $seconds % 60;
+
 		my $dest_vol = $snap->child_get_string("destination-volume");
 		my $current_transfer = $snap->child_get_string("current-transfer-type");
         if ($verbose) {
@@ -136,7 +145,6 @@ while(defined($next)){
     		}
         } else {
             $snapmirror_ok++;
-            $normal_names{$dest_vol} = [ $healthy, $lag ];
         }
 
         if (defined($lag) && ($lag >= $LagOpt)){
@@ -147,6 +155,8 @@ while(defined($next)){
                 $lagged_names{$dest_vol} = [ $healthy, $lag ];
                 $snapmirror_lag++;
             }
+        } else {
+            $normal_names{$dest_vol} = [ $healthy, $lag ];
         }
 	}
 $next = $snap_output->child_get_string("next-tag");
