@@ -19,8 +19,8 @@ use NaServer;
 use NaElement;
 use Getopt::Long;
 use Data::Dumper;
-use Time::Piece;
-use Time::Seconds qw/ ONE_DAY /;
+#use Time::Piece;
+#use Time::Seconds qw/ ONE_DAY /;
 
 GetOptions(
     'H|hostname=s' => \my $Hostname,
@@ -49,6 +49,15 @@ Error('Option --hostname needed!') unless $Hostname;
 Error('Option --username needed!') unless $Username;
 Error('Option --password needed!') unless $Password;
 $LagOpt = 3600 * 28 unless $LagOpt; # 1 day 4 hours
+
+sub sec2human {
+    my $secs = shift;
+    if    ($secs >= 365*24*60*60) { return sprintf '%.1f year(s)', $secs/(365*24*60*60) }
+    elsif ($secs >=     24*60*60) { return sprintf '%.1f day(s)', $secs/(24*60*60) }
+    elsif ($secs >=        60*60) { return sprintf '%.1f hour(s)', $secs/(60*60) }
+    elsif ($secs >=           60) { return sprintf '%.1f minute(s)', $secs/(60) }
+    else                          { return sprintf '%.1f second(s)', $secs}
+}
 
 my $s = NaServer->new( $Hostname, 1, 3 );
 $s->set_transport_type("HTTPS");
@@ -112,11 +121,9 @@ while(defined($next)){
 		my $healthy = $snap->child_get_string("is-healthy");
 		my $lag = $snap->child_get_string("lag-time");
 
-        # #convert to readable
-        # my $seconds = $lag;
-        # my $hours = int( $seconds / (60*60) );
-        # my $mins = ( $seconds / 60 ) % 60;
-        # my $secs = $seconds % 60;
+        # convert to readable
+        # my @parts = gmtime($lag);
+        # printf ("%4d %4d %4d %4d\n",@parts[7,2,1,0]);
 
 		my $dest_vol = $snap->child_get_string("destination-volume");
 		my $current_transfer = $snap->child_get_string("current-transfer-type");
@@ -138,7 +145,7 @@ while(defined($next)){
                 print "[DEBUG] ".Dumper($snap);
             }
             if(! $current_transfer){
-    			$failed_names{$dest_vol} = [ $healthy, $lag ];
+    			$failed_names{$dest_vol} = [ $healthy, sec2human($lag) ];
     			$snapmirror_failed++;
             } elsif (($status eq "transferring") || ($status eq "finalizing")){
     			$snapmirror_ok++;
@@ -152,11 +159,11 @@ while(defined($next)){
                 print "[DEBUG] ".Dumper($snap);
             }
             unless(($failed_names{$dest_vol}) || ($status eq "transferring") || ($status eq "finalizing")){
-                $lagged_names{$dest_vol} = [ $healthy, $lag ];
+                $lagged_names{$dest_vol} = [ $healthy, sec2human($lag) ];
                 $snapmirror_lag++;
             }
         } else {
-            $normal_names{$dest_vol} = [ $healthy, $lag ];
+            $normal_names{$dest_vol} = [ $healthy, sec2human($lag) ];
         }
 	}
 $next = $snap_output->child_get_string("next-tag");
@@ -195,20 +202,20 @@ if ($snapmirror_failed) {
 if ($snapmirror_lag){	
 	print "INFO: $snapmirror_lag snapmirror(s) lagging - $snapmirror_ok snapmirror(s) ok\n";
 	print "Lagging snapmirror(s):\n";
-	printf ("%-*s%*s%*s\n", 70, "Name", 10, "Healthy", 10, "Delay");
+	printf ("%-*s%*s%*s\n", 70, "Name", 10, "Healthy", 17, "Delay");
 	for my $vol ( keys %lagged_names ) {
 		my $health_lag = $lagged_names{$vol};
 		my @health_lag_value = @{ $health_lag };
 		$health_lag_value[1] = "--- " unless $health_lag_value[1];
-		printf ("%-*s%*s%*s\n", 70, $vol, 10, $health_lag_value[0], 10, $health_lag_value[1] . "s");
+		printf ("%-*s%*s%*s\n", 70, $vol, 10, $health_lag_value[0], 17, $health_lag_value[1]);
 	}
     print "\nNormal snapmirror(s):\n";
-	printf ("%-*s%*s%*s\n", 70, "Name", 10, "Healthy", 10, "Delay");
+	printf ("%-*s%*s%*s\n", 70, "Name", 10, "Healthy", 17, "Delay");
 	for my $vol ( keys %normal_names ) {
 		my $health_lag = $normal_names{$vol};
 		my @health_lag_value = @{ $health_lag };
 		$health_lag_value[1] = "--- " unless $health_lag_value[1];
-		printf ("%-*s%*s%*s\n", 70, $vol, 10, $health_lag_value[0], 10, $health_lag_value[1] . "s");
+		printf ("%-*s%*s%*s\n", 70, $vol, 10, $health_lag_value[0], 17, $health_lag_value[1]);
 	}
 
 	if (@excluded_volumes && !$exclude_printed) {
@@ -218,12 +225,12 @@ if ($snapmirror_lag){
 	exit 0;
 } else {
 	print "OK: $snapmirror_ok snapmirror(s) ok\n";
-    printf ("%-*s%*s%*s\n", 70, "Name", 10, "Healthy", 10, "Delay");
+    printf ("%-*s%*s%*s\n", 70, "Name", 10, "Healthy", 17, "Delay");
 	for my $vol ( keys %normal_names ) {
 		my $health_lag = $normal_names{$vol};
 		my @health_lag_value = @{ $health_lag };
 		$health_lag_value[1] = "--- " unless $health_lag_value[1];
-		printf ("%-*s%*s%*s\n", 70, $vol, 10, $health_lag_value[0], 10, $health_lag_value[1] . "s");
+		printf ("%-*s%*s%*s\n", 70, $vol, 10, $health_lag_value[0], 17, $health_lag_value[1]);
 	}	
 
 	if (@excluded_volumes && !$exclude_printed) {

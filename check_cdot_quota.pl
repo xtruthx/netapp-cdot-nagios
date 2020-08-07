@@ -47,6 +47,8 @@ GetOptions(
     'h|help'     => sub { exec perldoc => -F => $0 or die "Cannot execute perldoc: $!\n"; },
 ) or Error("$0: Error in command line arguments\n");
 
+my $version = "1.0.0";
+
 # separate exclude strings into arrays
 my %Excludelist;
 @Excludelist{@excludelistarray}=();
@@ -229,6 +231,8 @@ foreach my $vol ( keys(%perfdata) ) {
 	0, $perfdata{$vol}{'byte_total'} );
 }
 
+# Version output
+print "Script version: $version\n";
 
 if(scalar(@crit_msg) ){
     print "CRITICAL:\n";
@@ -277,7 +281,7 @@ __END__
 
 =head1 NAME
 
-check_cdot_volume - Check Volume Usage
+check_cdot_quota - Check quota usage
 
 =head1 SYNOPSIS
 

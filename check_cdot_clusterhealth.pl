@@ -42,7 +42,7 @@ GetOptions(
     'h|help'     => sub { exec perldoc => -F => $0 or die "Cannot execute perldoc: $!\n"; },
 ) or Error("$0: Error in command line arguments\n");
 
-my $version = "1.0.0";
+my $version = "1.0.1";
 
 # get list of excluded elements
 my %Excludelist;
@@ -264,7 +264,27 @@ foreach my $node (@result) {
                 $ok_msg .= "Takeover State: $takeover_state, Takeover of Partner: $takeover_of, Takeover by Partner: $takeover_by";
             }
         }
-    
+
+        # get storage failover options
+        my $failover_info = $node->child_get('sfo-options-info');
+        my @failover_object = $failover_info->children_get();
+
+        foreach my $failover_options_info (@failover_object) {
+            $failover_enabled = $failover_options_info->child_get_string('failover-enabled');
+            $auto_giveback_enabled = $failover_options_info->child_get_string('auto-giveback-enabled');
+
+            # print $failover_enabled." ".$auto_giveback_enabled."\n";
+            if(($failover_enabled ne 'true') || ($auto_giveback_enabled ne 'true')) {
+                if($failover_enabled ne 'true') {
+                    $crit_msg .= "Failover enabled: $failover_enabled, ";
+                    # $h_warn_crit_info->{$node_name}->{'node_failover_c'} = 1;
+                }
+                if($auto_giveback_enabled ne 'true') {
+                    $crit_msg .= "Giveback enabled: $auto_giveback_enabled, ";
+                    # $h_warn_crit_info->{$node_name}->{'node_giveback_c'} = 1;
+                }
+            }
+        }
 
         # get missing disk information
         my $missing_info = $node->child_get('sfo-storage-info');
@@ -283,31 +303,6 @@ foreach my $node (@result) {
                 if($partner_missing_disks) {
                     $crit_msg .= "Disks partner node missing but local node sees: $partner_missing_disks, ";
                     # $h_warn_crit_info->{$node_name}->{'node_missing_partner_c'} = 1;
-                }
-            }
-        }
-    }
-
-    if($cluster_size <= 2) {
-        #print "Cluster contains less than 2 nodes, cannot perform failover\n";
-    } else {
-        # get storage failover options
-        my $failover_info = $node->child_get('sfo-options-info');
-        my @failover_object = $failover_info->children_get();
-
-        foreach my $failover_options_info (@failover_object) {
-            $failover_enabled = $failover_options_info->child_get_string('failover-enabled');
-            $auto_giveback_enabled = $failover_options_info->child_get_string('auto-giveback-enabled');
-
-            # print $failover_enabled." ".$auto_giveback_enabled."\n";
-            if(($failover_enabled ne 'true') || ($auto_giveback_enabled ne 'true')) {
-                if($failover_enabled ne 'true') {
-                    $crit_msg .= "Failover enabled: $failover_enabled, ";
-                    # $h_warn_crit_info->{$node_name}->{'node_failover_c'} = 1;
-                }
-                if($auto_giveback_enabled ne 'true') {
-                    $crit_msg .= "Giveback enabled: $auto_giveback_enabled, ";
-                    # $h_warn_crit_info->{$node_name}->{'node_giveback_c'} = 1;
                 }
             }
         }

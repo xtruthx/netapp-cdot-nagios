@@ -28,6 +28,8 @@ GetOptions(
     'help|?'     => sub { exec perldoc => -F => $0 or die "Cannot execute perldoc: $!\n"; },
 ) or Error("$0: Error in command line arguments\n");
 
+my $version = "1.0.0";
+
 my %Excludelist;
 @Excludelist{@excludelistarray}=();
 my $excludeliststr = join "|", @excludelistarray;
@@ -139,7 +141,7 @@ while(defined($next)){
 
         # notes:
         #  ^MDV_CRS : CDOT Meta Data
-        if (($vol_name =~ m/^MDV_CRS|vol0|_root$/) || ($type eq "dp")){
+        if (($vol_name =~ m/^MDV_|vol0|_root|-mc$/) || ($type eq "dp")){
             push(@auto_excluded_volumes,$location."\n");
             next;
         }
@@ -164,6 +166,9 @@ while(defined($next)){
     }
     $next = $output->child_get_string("next-tag");
 }
+
+# Version output
+print "Script version: $version\n";
 
 if (@missing_snapmirror) {
     print @missing_snapmirror . " volume(s) without snapmirror|\n";
@@ -207,7 +212,7 @@ Checks that all the volumes have a SnapMirror configuration
 
 =item --hostname FQDN
 
-The Hostname of the NetApp to monitor
+The Hostname of the NetApp to monitor (Cluster or Node MGMT)
 
 =item --username USERNAME
 

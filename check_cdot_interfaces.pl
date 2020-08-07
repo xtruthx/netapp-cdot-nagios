@@ -30,6 +30,8 @@ GetOptions(
     'help|?'     => sub { exec perldoc => -F => $0 or die "Cannot execute perldoc: $!\n"; },
 ) or Error( "$0: Error in command line arguments\n" );
 
+my $version = "1.0.0";
+
 sub Error {
     print "$0: ".$_[0]."\n";
     exit 2;
@@ -244,6 +246,9 @@ if($nics) {
         }
     }
 }
+
+# Version output
+print "Script version: $version\n";
 
 if(@failed_ports && @nic_errors) {
     print "CRITICAL: ";

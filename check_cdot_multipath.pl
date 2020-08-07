@@ -30,9 +30,7 @@ GetOptions(
     'help|?'     => sub { exec perldoc => -F => $0 or die "Cannot execute perldoc: $!\n"; },
 ) or Error( "$0: Error in command line arguments\n" );
 
-my $version = "1.0.0";
-
-print $Exception."\n";
+my $version = "1.0.1";
 
 sub Error {
     print "$0: ".$_[0]."\n";
@@ -72,9 +70,6 @@ if($config_state eq "configured") {
     } elsif ($type eq "fabric") {
         $must_paths = 8;
     } elsif ($type eq "two_node_fabric") {
-        print $Exception;
-        $must_paths = 1;
-    } else {
         $must_paths = 4;
     }
 } else {
@@ -84,10 +79,7 @@ if($config_state eq "configured") {
     } else {
         $must_paths = 4;        
     }
-
 }
-
-print $must_paths."\n";
 
 my $shelf_iterator = NaElement->new("storage-shelf-info-get-iter");
 $shelf_iterator->child_add_string("max-records", "1000");
@@ -218,7 +210,7 @@ if (@failed_disks) {
     if(@info_disks) {
         print "\nOK: disk(s) having more than 1 path:\n" . join( " ", @info_disks );
     } else {
-        print "\nOK: All disks multipath or with one path as configured.\n";
+        print "\nOK: All disks multipath or with $must_paths path(s) as configured.\n";
     }
     
     exit 0;
