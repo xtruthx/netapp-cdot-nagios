@@ -211,18 +211,17 @@ __END__
 
 =head1 NAME
 
-check_cdot_lun - Check Lun Usage
+check_cdot_vscan - Check Vscan connection status
 
 =head1 SYNOPSIS
 
-check_cdot_lun.pl --hostname HOSTNAME --username USERNAME \
-           --password PASSWORD --size-warning PERCENT_WARNING \
-           --size-critical PERCENT_CRITICAL (--volume VOLUME) (--perf)
+check_cdot_vscan.pl --hostname HOSTNAME --username USERNAME \
+           --password PASSWORD (--vserver VSERVER) (--perf)
 
 =head1 DESCRIPTION
 
-Checks the lUN Space usage of the NetApp System and warns
-if warning or critical Thresholds are reached
+Checks the vscan connection of the NetApp System and warns
+if the connection is disrupted
 
 =head1 OPTIONS
 
@@ -239,18 +238,6 @@ The Login Username of the NetApp to monitor
 =item --password PASSWORD
 
 The Login Password of the NetApp to monitor
-
-=item --size-warning PERCENT_WARNING
-
-The Warning threshold
-
-=item --size-critical PERCENT_CRITICAL
-
-The Critical threshold
-
-=item --volume VOLUME
-
-Optional: The name of the Volume where the Luns that need to be checked are located
 
 =item --vserver VSERVER
 
