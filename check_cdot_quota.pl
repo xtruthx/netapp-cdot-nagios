@@ -32,6 +32,8 @@ GetOptions(
     'p|password=s' => \my $Password,
     'capacity-warning=i'  => \my $CapacityWarning,
     'capacity-critical=i' => \my $CapacityCritical,
+    'size-warning=i'  => \my $SizeWarning,
+    'size-critical=i' => \my $SizeCritical,
     'files-warning=i'  => \my $FilesWarning,
     'files-critical=i' => \my $FilesCritical,
     'P|perf'     => \my $perf,
@@ -42,12 +44,11 @@ GetOptions(
     'perfdatadir=s' => \my $perfdatadir,
     'perfdataservicedesc=s' => \my $perfdataservicedesc,
     't|target=s'   => \my $Quota,
-    'vserver=s' => \my $Vserver,
     'v|verbose' => \my $verbose,
     'h|help'     => sub { exec perldoc => -F => $0 or die "Cannot execute perldoc: $!\n"; },
 ) or Error("$0: Error in command line arguments\n");
 
-my $version = "1.0.0";
+my $version = "1.0.1";
 
 # separate exclude strings into arrays
 my %Excludelist;
@@ -70,6 +71,8 @@ $CapacityWarning = 85 unless $CapacityWarning;
 $CapacityCritical = 90 unless $CapacityCritical;
 $FilesWarning = 85 unless $FilesWarning;
 $FilesCritical = 90 unless $FilesCritical;
+
+
 
 my ($crit_msg, $warn_msg, $ok_msg);
 # Store all perf data points for output at end
@@ -225,10 +228,10 @@ my $perfdatastr="";
 foreach my $vol ( keys(%perfdata) ) {
     # DS[1] - Data space used
     $perfdatastr.=sprintf(" %s_space_used=%dB;%d;%d;%d;%d", $vol, $perfdata{$vol}{'byte_used'},
-	$SizeWarning*$perfdata{$vol}{'byte_total'}/100, $SizeCritical*$perfdata{$vol}{'byte_total'}/100,
-    $perfdatastr.=sprintf(" %s_space_used=%dBytes;%d;%d;%d;%d", $vol, $perfdata{$vol}{'byte_used'},
+	#$SizeWarning*$perfdata{$vol}{'byte_total'}/100, $SizeCritical*$perfdata{$vol}{'byte_total'}/100,
+    #$perfdatastr.=sprintf(" %s_space_used=%dBytes;%d;%d;%d;%d", $vol, $perfdata{$vol}{'byte_used'},
 	$CapacityWarning*$perfdata{$vol}{'byte_total'}/100, $CapacityCritical*$perfdata{$vol}{'byte_total'}/100,
-	0, $perfdata{$vol}{'byte_total'} );
+    0, $perfdata{$vol}{'byte_total'} );
 }
 
 # Version output

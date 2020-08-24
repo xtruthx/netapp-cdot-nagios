@@ -23,7 +23,7 @@ use NaElement;
 use Getopt::Long;
 
 GetOptions(
-    'hostname=s' => \my $Hostname,
+    'H|hostname=s' => \my $Hostname,
     'username=s' => \my $Username,
     'password=s' => \my $Password,
     'onepath-config=s'=> \my $Exception,
@@ -60,6 +60,7 @@ my $mcc_info = $mcc->child_get("metrocluster-info");
 my $config_state = $mcc_info->child_get_string("local-configuration-state");
 my $mcc_name = $mcc_info->child_get_string("local-cluster-name");
 
+my $must_paths = 4;
 
 if($config_state eq "configured") {
 
