@@ -33,6 +33,7 @@ GetOptions(
     'H|hostname=s' => \my $Hostname,
     'u|username=s' => \my $Username,
     'p|password=s' => \my $Password,
+    'autogiveback' => \my $Autogiveback,
     'P|perf'     => \my $perf,
     'exclude=s'	 =>	\my @excludelistarray,
     'regexp'            => \my $regexp,
@@ -42,7 +43,11 @@ GetOptions(
     'h|help'     => sub { exec perldoc => -F => $0 or die "Cannot execute perldoc: $!\n"; },
 ) or Error("$0: Error in command line arguments\n");
 
-my $version = "1.0.1";
+my $version = "1.0.2";
+
+# one-node-mcc parameter für nicht ha-fähig
+# nur ein lokaler node ==> kein HA Check
+# metrocluster abfragen und dann nur diese Parameter checken
 
 # get list of excluded elements
 my %Excludelist;
@@ -53,44 +58,6 @@ sub Error {
     print "$0: " . $_[0] . "\n";
     exit 2;
 }
-
-# html output containing the node and its status
-# _c = warning in yellow
-# rest = safe in green
-# sub draw_html_table {
-# 	my ($hrefInfo) = @_;
-# 	my @headers = qw(node state);
-# 	# define columns that will be filled and shown
-# 	my @columns = qw(node_state);
-# 	my $html_table="";
-# 	$html_table .= "<table class=\"common-table\" style=\"border-collapse:collapse; border: 1px solid black;\">";
-# 	$html_table .= "<tr>";
-# 	foreach (@headers) {
-# 		$html_table .= "<th style=\"text-align: left; padding-left: 4px; padding-right: 6px;\">".$_."</th>";
-# 	}
-# 	$html_table .= "</tr>";
-# 	foreach my $node (sort {lc $a cmp lc $b} keys %$hrefInfo) {
-# 		$html_table .= "<tr>";
-# 		$html_table .= "<tr style=\"border: 1px solid black;\">";
-# 		$html_table .= "<td style=\"text-align: left; padding-left: 4px; padding-right: 6px; background-color: #acacac;\">".$node."</td>";
-# 		# loop through all attributes defined in @columns
-# 		foreach my $attr (@columns) {
-# 			if ($attr eq "node_state") {
-#                 if (defined $hrefInfo->{$node}->{"node_state_c"}){
-# 					$html_table .= "<td class=\"state-critical\" style=\"text-align: left; padding-left: 4px; padding-right: 6px; background-color: #f83838\">".$hrefInfo->{$node}->{$attr}."</td>";
-# 				} else {
-# 					$html_table .= "<td class=\"state-ok\" style=\"text-align: left; padding-left: 4px; padding-right: 6px; background-color: #33ff00\">".$hrefInfo->{$node}->{$attr}."</td>";
-# 				}
-# 			} else {
-# 				$html_table .= "<td style=\"text-align: left; padding-left: 4px; padding-right: 6px;\">".$hrefInfo->{$node}->{$attr}."</td>";
-# 			}
-# 		}
-# 		$html_table .= "</tr>";
-# 	}
-# 	$html_table .= "</table>\n";
-
-# 	return $html_table;
-# }
 
 # write performance data for plugin
 sub perfdata_to_file {
@@ -213,7 +180,6 @@ foreach my $node (@result) {
         my $node_current_mode = $node_related_info->child_get_string('current-mode');
         my $node_ha_type = $node_related_info->child_get_string('ha-type');
 
-        #print $node_name." ".$node_state." ".$node_state_description." ".$node_current_mode." ".$node_ha_type."\n";
         $ok_msg = "$node_name (";
         
         if(($node_state_description !~ m/Connected/) || $node_current_mode ne 'ha') {
@@ -231,9 +197,7 @@ foreach my $node (@result) {
         }
     }
 
-    if($cluster_size < 2) {
-        #print "Cluster contains less than 1 nodes, cannot perform takeover\n";
-    } else {
+    if($cluster_size > 2) {
         # get takover related information
         my $takeover_info = $node->child_get('sfo-takeover-info');
         my @takeover_related_object = $takeover_info->children_get();
@@ -261,7 +225,7 @@ foreach my $node (@result) {
                     # $h_warn_crit_info->{$node_name}->{'node_takeover_by_c'} = 1;
                 }
             } else {
-                $ok_msg .= "Takeover State: $takeover_state, Takeover of Partner: $takeover_of, Takeover by Partner: $takeover_by";
+                $ok_msg .= "Takeover State: $takeover_state, Takeover of Partner: $takeover_of, Takeover by Partner: $takeover_by, ";
             }
         }
 
@@ -273,14 +237,18 @@ foreach my $node (@result) {
             $failover_enabled = $failover_options_info->child_get_string('failover-enabled');
             $auto_giveback_enabled = $failover_options_info->child_get_string('auto-giveback-enabled');
 
-            # print $failover_enabled." ".$auto_giveback_enabled."\n";
             if(($failover_enabled ne 'true') || ($auto_giveback_enabled ne 'true')) {
                 if($failover_enabled ne 'true') {
                     $crit_msg .= "Failover enabled: $failover_enabled, ";
                     # $h_warn_crit_info->{$node_name}->{'node_failover_c'} = 1;
                 }
                 if($auto_giveback_enabled ne 'true') {
-                    $crit_msg .= "Giveback enabled: $auto_giveback_enabled, ";
+                    $ok_msg .= "Giveback enabled: $auto_giveback_enabled ";
+                    # $h_warn_crit_info->{$node_name}->{'node_giveback_c'} = 1;
+                }
+            } else {
+                if($auto_giveback_enabled eq 'true') {
+                    $ok_msg .= "Giveback enabled: $auto_giveback_enabled ";
                     # $h_warn_crit_info->{$node_name}->{'node_giveback_c'} = 1;
                 }
             }

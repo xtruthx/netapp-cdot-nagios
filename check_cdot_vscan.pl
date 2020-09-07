@@ -35,7 +35,7 @@ my %Excludevserverlist;
 @Excludevserverlist{@excludevserverlistarray}=();
 my $excludevserverliststr = join "|", @excludevserverlistarray;
 
-my $version = "1.0.0";
+my $version = "1.0.1";
 
 sub Error {
     print "$0: " . $_[0] . "\n";
@@ -45,7 +45,7 @@ Error('Option --hostname needed!') unless $Hostname;
 Error('Option --username needed!') unless $Username;
 Error('Option --password needed!') unless $Password;
 
-my (@crit_msg, @warn_msg, @ok_msg);
+my (@crit_msg, @warn_msg, @ok_msg, $conn_msg);
 
 my $s = new NaServer( $Hostname, 1, 110 );
 $s->set_transport_type('HTTPS');
@@ -102,8 +102,6 @@ while(defined($enabled_next)){
 			my $status_msg = "vscan enabled for $vserver: $vscan_enabled";
 
 			if($vscan_enabled ne "true"){
-				#push (@crit_msg, "$status_msg\n");
-			#} elsif ($vscan_enabled ne "true" && $vscan_enabled ne "false"){
 				push (@warn_msg, "$status_msg\n");
 			} else {
 				push (@ok_msg, "$status_msg\n")
@@ -112,7 +110,6 @@ while(defined($enabled_next)){
 	}
 	$enabled_next = $output->child_get_string("next-tag");
 }
-
 
 my $connection_iterator = new NaElement('vscan-connection-status-all-get-iter');
 my $connection_tag_elem = NaElement->new("tag");
@@ -127,7 +124,7 @@ if($Vserver){
 }
 my $connection_next = '';
 
-while(defined($connection_next)){
+while(defined($connection_next) && scalar(@ok_msg) ne 0){
 	unless($connection_next eq ""){
 		$connection_tag_elem->set_content($connection_next);
 	}
@@ -164,11 +161,15 @@ while(defined($connection_next)){
                 }
             }
 
-			my $conn_msg;
+			unless ( grep( /^$server_name$/, @ok_msg ) ) {
+				next;
+			}
 
-			if($server_status =~ m/^dis$/ || ($disconnect_reason) || ($disconnected_since)) {
+			$conn_msg="";
+
+			if($server_status =~ m/^dis$/ && ($disconnect_reason) && ($disconnected_since)) {
 				$conn_msg = "vscan $server_name is $server_status ($disconnected_since). Reason: $disconnect_reason";
-				push (@crit_msg, "$conn_msg\n");
+				push (@warn_msg, "$conn_msg\n");
 			} elsif ($server_status =~ m/^ing$/){
 				$conn_msg = "vscan $server_name is $server_status";
 				push (@warn_msg, "$conn_msg\n");
@@ -186,12 +187,7 @@ print "Script version: $version\n";
 
 my $size;
 
-if(scalar(@crit_msg) ){
-    $size = @crit_msg;
-    print "CRITICAL: $size vserver(s) do not have vscan enabled\n";
-    print join ("", @crit_msg);
-	exit 2;
-} if(scalar(@warn_msg) ){
+if(scalar(@warn_msg) ){
     $size = @warn_msg;
     print "WARNING: $size vserver(s) do not have vscan enabled\n";
     print join ("", @warn_msg);
@@ -211,17 +207,18 @@ __END__
 
 =head1 NAME
 
-check_cdot_vscan - Check Vscan connection status
+check_cdot_lun - Check Lun Usage
 
 =head1 SYNOPSIS
 
-check_cdot_vscan.pl --hostname HOSTNAME --username USERNAME \
-           --password PASSWORD (--vserver VSERVER) (--perf)
+check_cdot_lun.pl --hostname HOSTNAME --username USERNAME \
+           --password PASSWORD --size-warning PERCENT_WARNING \
+           --size-critical PERCENT_CRITICAL (--volume VOLUME) (--perf)
 
 =head1 DESCRIPTION
 
-Checks the vscan connection of the NetApp System and warns
-if the connection is disrupted
+Checks the lUN Space usage of the NetApp System and warns
+if warning or critical Thresholds are reached
 
 =head1 OPTIONS
 
@@ -238,6 +235,18 @@ The Login Username of the NetApp to monitor
 =item --password PASSWORD
 
 The Login Password of the NetApp to monitor
+
+=item --size-warning PERCENT_WARNING
+
+The Warning threshold
+
+=item --size-critical PERCENT_CRITICAL
+
+The Critical threshold
+
+=item --volume VOLUME
+
+Optional: The name of the Volume where the Luns that need to be checked are located
 
 =item --vserver VSERVER
 
@@ -267,4 +276,4 @@ to see this Documentation
 
 =head1 AUTHORS
 
-Therese Ho <thereseh at netapp dot com>
+ Giorgio Maggiolo <giorgio at maggiolo dot net>
