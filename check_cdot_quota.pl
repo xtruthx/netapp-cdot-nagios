@@ -162,7 +162,8 @@ while(defined($next)){
         my $filesUsed = $getQuota->child_get_string('files-used');
         my $volume = $getQuota->child_get_string('volume');
         my $type = $getQuota->child_get_string('quota-type');
-        my $target = "";
+        # my $target = "";
+        my $target = $getQuota->child_get_string('quota-target') unless $getQuota->child_get_string('quota-target') eq "*";
 
         # if Volume quotas should be excluded from check, ignore and next
         next if exists $Excludelist{$volume};
@@ -182,7 +183,7 @@ while(defined($next)){
         #     printf("Found quota for %s on %s\n", $quotaUser, $volume) if ($verbose);
         #     $target = sprintf("%s/%s", $volume, $quotaUser);
         # } else {
-        #     $target = $getQuota->child_get_string('quota-target') unless $getQuota->child_get_string('quota-target') eq "*";
+            # $target = $getQuota->child_get_string('quota-target') unless $getQuota->child_get_string('quota-target') eq "*";
             next;
         }
 
