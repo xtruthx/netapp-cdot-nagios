@@ -35,7 +35,7 @@ my %Excludevserverlist;
 @Excludevserverlist{@excludevserverlistarray}=();
 my $excludevserverliststr = join "|", @excludevserverlistarray;
 
-my $version = "1.0.2";
+my $version = "1.0.3";
 
 sub Error {
     print "$0: " . $_[0] . "\n";
@@ -159,20 +159,20 @@ while(defined($connection_next)){
 			}
 		}
 
-		unless ( grep( /^$server_name$/, @list )) {
+		unless ( grep( /^$vserver_name$/, @list )) {
 			next;
 		}
 
 		$conn_msg="";
 
 		if($server_status =~ m/^dis$/ && ($disconnect_reason) && ($disconnected_since)) {
-			$conn_msg = "vscan $server_name is $server_status ($disconnected_since). Reason: $disconnect_reason";
+			$conn_msg = "vscan $server_name on $vserver_name is $server_status ($disconnected_since). Reason: $disconnect_reason";
 			push (@warn_msg, "$conn_msg\n");
 		} elsif ($server_status =~ m/^ing$/){
-			$conn_msg = "vscan $server_name is $server_status";
+			$conn_msg = "vscan $server_name on $vserver_name is $server_status";
 			push (@warn_msg, "$conn_msg\n");
 		} else {
-			$conn_msg = "vscan $server_name is $server_status since $connected_since.";
+			$conn_msg = "vscan $server_name on $vserver_name is $server_status since $connected_since.";
 			push (@ok_msg, "$conn_msg\n")
 		}
 	}
