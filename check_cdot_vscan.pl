@@ -173,15 +173,16 @@ while(defined($connection_next)){
 			} else {
 				$conn_msg .= " Reason: $disconnect_reason";
 			}
+			push (@warn_msg, "$conn_msg\n")
 
 		} elsif ($server_status =~ m/^ing$/){
 			$conn_msg = "vscan $server_name on $vserver_name is $server_status";
+			push (@ok_msg, "$conn_msg\n")
 		} else {
 			my $connected_converted = scalar(localtime($connected_since));
 			$conn_msg = "vscan $server_name on $vserver_name is $server_status since $connected_converted.";
+			push (@ok_msg, "$conn_msg\n")
 		}
-
-		push (@ok_msg, "$conn_msg\n")
 	}
 
 	$connection_next = $connection_output->child_get_string("next-tag");
