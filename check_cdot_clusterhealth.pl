@@ -43,7 +43,7 @@ GetOptions(
     'h|help'     => sub { exec perldoc => -F => $0 or die "Cannot execute perldoc: $!\n"; },
 ) or Error("$0: Error in command line arguments\n");
 
-my $version = "1.0.2";
+my $version = "1.0.3";
 
 # one-node-mcc parameter für nicht ha-fähig
 # nur ein lokaler node ==> kein HA Check
@@ -188,7 +188,7 @@ foreach my $node (@result) {
                 $crit_msg .= "State: $node_state, Description: $node_state_description, ";
                 # $h_warn_crit_info->{$node_name}->{'node_state_c'} = 1;
             }
-            if ($node_current_mode ne 'ha') {
+            if (($node_current_mode ne 'ha') && ($cluster_size < 2)) {
                 $crit_msg .= "Current Mode: $node_current_mode, ";
                 # $h_warn_crit_info->{$node_name}->{'node_mode_c'} = 1;
             }

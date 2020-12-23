@@ -35,7 +35,7 @@ my %Excludevserverlist;
 @Excludevserverlist{@excludevserverlistarray}=();
 my $excludevserverliststr = join "|", @excludevserverlistarray;
 
-my $version = "1.0.4";
+my $version = "1.0.5";
 
 sub Error {
     print "$0: " . $_[0] . "\n";
@@ -165,16 +165,25 @@ while(defined($connection_next)){
 
 		$conn_msg="";
 
-		if(($server_status =~ m/^disconnected$/ && ($disconnected_since)) || ($disconnect_reason)) {
-			my $disconnected_converted = scalar(localtime($disconnected_since));
+		if($server_status =~ m/^disconnected$/) {
+			if($disconnect_reason eq "na") {
+				if($disconnected_since) {
+					my $disconnected_converted = scalar(localtime($disconnected_since));
+					$conn_msg = "vscan $server_name on $vserver_name is $server_status since $disconnected_converted.";
+					push (@warn_msg, "$conn_msg\n");
+				} else {
+					$conn_msg = "vscan $server_name on $vserver_name is $server_status.";
+					push (@ok_msg, "$conn_msg");
+				}
+			} elsif($disconnect_reason ne "na") {
+				$conn_msg = "vscan $server_name on $vserver_name is $server_status (Reason: $disconnect_reason)";
 
-			if(!$disconnect_reason) {
-				$conn_msg = "vscan $server_name on $vserver_name is $server_status ($disconnected_converted).";
-			} else {
-				$conn_msg .= " Reason: $disconnect_reason";
+				if($disconnected_since) {
+					my $disconnected_converted = scalar(localtime($disconnected_since));
+					$conn_msg .= " since $disconnected_converted";
+				}
+				push (@warn_msg, "$conn_msg\n");
 			}
-			push (@warn_msg, "$conn_msg\n")
-
 		} elsif ($server_status =~ m/^ing$/){
 			$conn_msg = "vscan $server_name on $vserver_name is $server_status";
 			push (@ok_msg, "$conn_msg\n")

@@ -32,6 +32,8 @@ GetOptions(
     'help|?'     => sub { exec perldoc => -F => $0 or die "Cannot execute perldoc: $!\n"; },
 ) or Error( "$0: Error in command line arguments\n" );
 
+my $version = "1.0.1";
+
 my %Excludelist;
 @Excludelist{@excludelistarray}=();
 my $excludeliststr = join "|", @excludelistarray;
@@ -202,18 +204,19 @@ while(defined( $snapmirror_next )){
         foreach my $snap (@snapmirror_result) {
             my $dest_vol = $snap->child_get_string( "destination-volume" );
             my $schedule = $snap->child_get_string( "schedule" );
-            # print Dumper($schedule);
 
-            unless($schedule){
-                push( @no_schedule, $dest_vol );
-            }
+            # unless($schedule){
+            #     push( @no_schedule, $dest_vol );
+            # }
             # else {
 
-            #     if ($dest_vol){
-            #         unless (($schedule =~ m/^hourly/) || ($schedule =~ m/daily/) || ($schedule =~ m/^15min$/) || ($dest_vol =~ m/^CC_snapprotect_SP/) || ($schedule =~ m/Nightly/)) {
-            #             push( @no_schedule, $dest_vol );
+                if ($dest_vol){
+            #       unless (($schedule =~ m/^hourly/) || ($schedule =~ m/daily/) || ($schedule =~ m/^15min$/) || ($dest_vol =~ m/^CC_snapprotect_SP/) || ($schedule =~ m/Nightly/)) {
+                    unless($schedule) {
+                        push( @no_schedule, $dest_vol );
+                    }
             #         }
-            #     }
+                }
             # }
         }
     }
@@ -271,6 +274,9 @@ my $filesysfixed_count = @wrong_filesysfixed;
 
 if (($qos_count != 0) || ($guarantee_count != 0) || ($schedule_count != 0) || ($failover_count != 0) || ($policy_count != 0) || ($snapreserve_count != 0) || ($filesysfixed_count != 0)) {
 
+# Version output
+print "Script version: $version\n";
+
     print "WARNING: Not all recommendations are applied\n";
 
     if ($qos_count != 0) {
@@ -304,7 +310,7 @@ if (($qos_count != 0) || ($guarantee_count != 0) || ($schedule_count != 0) || ($
     }
 
     if ($schedule_count != 0) {
-        print "WARNING - snapMirror without schedule:\n";
+        print "WARNING - snapmirror without schedule:\n";
         foreach(@no_schedule) {
             print "-> " . $_ . "\n";
         }
