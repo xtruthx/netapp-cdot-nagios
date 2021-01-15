@@ -16,8 +16,6 @@ use warnings;
 
 use lib "/usr/lib/netapp-manageability-sdk/lib/perl/NetApp";
 
-### unassigned disks in INFO packen
-
 use NaServer;
 use NaElement;
 use Getopt::Long qw(:config no_ignore_case);
@@ -37,7 +35,7 @@ GetOptions(
     'h|help'     => sub { exec perldoc => -F => $0 or die "Cannot execute perldoc: $!\n"; },
 ) or Error("$0: Error in command line arguments\n");
 
-my $version = "1.0.0";
+my $version = "1.0.1";
 
 # Filter through full names or regex
 my %Excludelist;
@@ -193,7 +191,7 @@ while(defined( $next )){
 print "Script version: $version\n";
 
 # Critical nur bei 0 Spares (Shared mitgezählt)
-if ( scalar @failed_disks >= $critical || $inventory{'Spare'} = 0 ) {
+if ( (scalar @failed_disks ge $critical) || ($inventory{'Spare'} == 0 )) {
 	print "CRITICAL: \n";
 	if ( scalar @failed_disks >= $critical ) {
 		print @failed_disks . " failed disk(s):\n" . join( "\n", @failed_disks );
@@ -206,26 +204,28 @@ if ( scalar @failed_disks >= $critical || $inventory{'Spare'} = 0 ) {
     push @ret, 2;
 }
 if ( scalar @failed_disks >= $warning || scalar @not_zeroed_disks >= $warning || scalar @maintenance_disks >= $warning ) {
-	print "WARNING: ";
+	print "\nWARNING: ";
 	if ( scalar @failed_disks >= $warning && scalar @failed_disks < $critical) {
 		print "\n" . @failed_disks . " failed disk(s):\n" . join( "\n", @failed_disks );
 	}
 	if ( scalar @not_zeroed_disks >= $warning ) {
-		print "\n\n" . @not_zeroed_disks . " not zeroed disk(s):\n" . join( "\n", @not_zeroed_disks );
+		print "\n" . @not_zeroed_disks . " not zeroed disk(s):\n" . join( "\n", @not_zeroed_disks );
 	}
 	if ( scalar @maintenance_disks >= $warning ) {
-		print "\n\n" . @maintenance_disks . " disk(s) in maintenance:\n" . join( "\n", @maintenance_disks );
+		print "\n" . @maintenance_disks . " disk(s) in maintenance:\n" . join( "\n", @maintenance_disks );
 	}
 
 	#print $perfdatastr ."\n";
     push @ret, 1;
 }
+
 if(($Diskcount) && ($Diskcount ne $disk_count)){
     my $diff = $Diskcount-$disk_count;
-    print "CRITICAL: $diff disk(s) missing"."\n";
+    print "\nCRITICAL: $diff disk(s) missing"."\n";
     push @ret, 2;
 } else {
-    print "OK: All $disk_count disks OK"."\n";
+    my $ok_count = $disk_count - (scalar @failed_disks) - (scalar @not_zeroed_disks) - (scalar @maintenance_disks);
+    print "\nOK: $ok_count disk(s) OK"."\n";
     push @ret, 0;
 }
 
@@ -234,11 +234,10 @@ if ( scalar @unassigned_disks > 0 ) {
     print "\n" . @unassigned_disks . " unassigned disk(s):\n" . join( "\n", @unassigned_disks );
 }   
 if ( $inventory{'Spare'} > 0 ) {
-    print "\n" . $inventory{'Spare'} . " spare disk(s):\n" . join("\n", @spare_disks );
+    print "\n" . scalar @spare_disks . " spare disk(s):\n" . join("\n", @spare_disks );
     print "\n" . scalar @shared_spare_disks ." shared spare disk(s):\n" . join("\n", @shared_spare_disks) ;
 }   
 
-# print max(@ret);
 exit max( @ret );
 
 
