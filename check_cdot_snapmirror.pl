@@ -38,7 +38,7 @@ GetOptions(
     'help|?'     => sub { exec perldoc => -F => $0 or die "Cannot execute perldoc: $!\n"; },
 ) or Error("$0: Error in command line arguments\n");
 
-my $version = "1.0.3";
+my $version = "1.0.4";
 
 my %Excludelist;
 @Excludelist{@excludelistarray}=();
@@ -207,12 +207,12 @@ print "Script version: $version\n";
 if ($snapmirror_failed) {
 	print "WARNING: $snapmirror_failed snapmirror(s) failed\n";
 	print "Failing snapmirror(s):\n";
-	printf ("%-*s%*s%*s\n", 50, "Name", 10, "Healthy", 20, "Delay");
+	printf ("%-*s%*s%*s\n", 80, "Name", 10, "Healthy", 20, "Delay");
 	for my $vol ( keys %failed_names ) {
 		my $health_lag = $failed_names{$vol};
 		my @health_lag_value = @{ $health_lag };
 		unless($health_lag_value[1]) { $health_lag_value[1] = "--- " } else { $health_lag_value[1] = sec2human($health_lag_value[1] )  };
-		printf ("%-*s%*s%*s\n", 50, $vol, 10, $health_lag_value[0], 20, $health_lag_value[1]);
+		printf ("%-*s%*s%*s\n", 80, $vol, 10, $health_lag_value[0], 20, $health_lag_value[1]);
 	}
 
 	if (@excluded_volumes) {
@@ -225,12 +225,12 @@ if ($snapmirror_failed) {
 if ($snapmirror_lag){	
 	print "\nINFO: $snapmirror_lag snapmirror(s) lagging\n";
 	print "Lagging snapmirror(s):\n";
-	printf ("%-*s%*s%*s\n", 50, "Name", 10, "Healthy", 20, "Delay");
+	printf ("%-*s%*s%*s\n", 80, "Name", 10, "Healthy", 20, "Delay");
 	for my $vol ( keys %lagged_names ) {
 		my $health_lag = $lagged_names{$vol};
 		my @health_lag_value = @{ $health_lag };
 		unless($health_lag_value[1]) { $health_lag_value[1] = "--- " } else { $health_lag_value[1] = sec2human($health_lag_value[1] ) };
-		printf ("%-*s%*s%*s\n", 50, $vol, 10, $health_lag_value[0], 20, $health_lag_value[1]);
+		printf ("%-*s%*s%*s\n", 80, $vol, 10, $health_lag_value[0], 20, $health_lag_value[1]);
 	}
 
 	if (@excluded_volumes && !$exclude_printed) {
@@ -241,12 +241,12 @@ if ($snapmirror_lag){
 }
 
 print "\nOK: $snapmirror_ok snapmirror(s) ok\n";
-printf ("%-*s%*s%*s\n", 50, "Name", 10, "Healthy", 20, "Delay");
+printf ("%-*s%*s%*s\n", 80, "Name", 10, "Healthy", 20, "Delay");
 for my $vol ( keys %normal_names ) {
     my $health_lag = $normal_names{$vol};
     my @health_lag_value = @{ $health_lag };
     unless($health_lag_value[1]) { $health_lag_value[1] = "--- " } else { $health_lag_value[1] = sec2human($health_lag_value[1] ) };
-    printf ("%-*s%*s%*s\n", 50, $vol, 10, $health_lag_value[0], 20, $health_lag_value[1]);
+    printf ("%-*s%*s%*s\n", 80, $vol, 10, $health_lag_value[0], 20, $health_lag_value[1]);
 }	
 
 if (@excluded_volumes && !$exclude_printed) {

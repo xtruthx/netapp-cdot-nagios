@@ -32,7 +32,7 @@ GetOptions(
     'help|?'     => sub { exec perldoc => -F => $0 or die "Cannot execute perldoc: $!\n"; },
 ) or Error( "$0: Error in command line arguments\n" );
 
-my $version = "1.0.1";
+my $version = "1.0.2";
 
 my %Excludelist;
 @Excludelist{@excludelistarray}=();
@@ -183,45 +183,45 @@ $snapmirror_iterator->child_add( $snapmirror_tag_elem );
 
 my $snapmirror_next = "";
 
-while(defined( $snapmirror_next )){
-    unless ($snapmirror_next eq "") {
-        $snapmirror_tag_elem->set_content( $snapmirror_next );
-    }
+# while(defined( $snapmirror_next )){
+#     unless ($snapmirror_next eq "") {
+#         $snapmirror_tag_elem->set_content( $snapmirror_next );
+#     }
 
-    $snapmirror_iterator->child_add_string( "max-records", 100 );
-    my $snapmirror_output = $s->invoke_elem( $snapmirror_iterator );
+#     $snapmirror_iterator->child_add_string( "max-records", 100 );
+#     my $snapmirror_output = $s->invoke_elem( $snapmirror_iterator );
 
-    if ($snapmirror_output->results_errno != 0) {
-        my $r = $snapmirror_output->results_reason();
-        print "UNKNOWN: $r\n";
-        exit 3;
-    }
+#     if ($snapmirror_output->results_errno != 0) {
+#         my $r = $snapmirror_output->results_reason();
+#         print "UNKNOWN: $r\n";
+#         exit 3;
+#     }
 
-    my $snapmirrors = $snapmirror_output->child_get( "attributes-list" );
-    if ($snapmirrors) {
-        my @snapmirror_result = $snapmirrors->children_get();
+#     my $snapmirrors = $snapmirror_output->child_get( "attributes-list" );
+#     if ($snapmirrors) {
+#         my @snapmirror_result = $snapmirrors->children_get();
 
-        foreach my $snap (@snapmirror_result) {
-            my $dest_vol = $snap->child_get_string( "destination-volume" );
-            my $schedule = $snap->child_get_string( "schedule" );
+#         foreach my $snap (@snapmirror_result) {
+#             my $dest_vol = $snap->child_get_string( "destination-volume" );
+#             my $schedule = $snap->child_get_string( "schedule" );
 
-            # unless($schedule){
-            #     push( @no_schedule, $dest_vol );
-            # }
-            # else {
+#             # unless($schedule){
+#             #     push( @no_schedule, $dest_vol );
+#             # }
+#             # else {
 
-                if ($dest_vol){
-            #       unless (($schedule =~ m/^hourly/) || ($schedule =~ m/daily/) || ($schedule =~ m/^15min$/) || ($dest_vol =~ m/^CC_snapprotect_SP/) || ($schedule =~ m/Nightly/)) {
-                    unless($schedule) {
-                        push( @no_schedule, $dest_vol );
-                    }
-            #         }
-                }
-            # }
-        }
-    }
-    $snapmirror_next = $snapmirror_output->child_get_string( "next-tag" );
-}
+#                 if ($dest_vol){
+#             #       unless (($schedule =~ m/^hourly/) || ($schedule =~ m/daily/) || ($schedule =~ m/^15min$/) || ($dest_vol =~ m/^CC_snapprotect_SP/) || ($schedule =~ m/Nightly/)) {
+#                     unless($schedule) {
+#                         push( @no_schedule, $dest_vol );
+#                     }
+#             #         }
+#                 }
+#             # }
+#         }
+#     }
+#     $snapmirror_next = $snapmirror_output->child_get_string( "next-tag" );
+# }
 
 my $lif_iterator = NaElement->new( "net-interface-get-iter" );
 my $lif_tag_elem = NaElement->new( "tag" );

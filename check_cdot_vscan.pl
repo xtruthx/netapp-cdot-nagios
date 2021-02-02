@@ -20,6 +20,7 @@ use NaServer;
 use NaElement;
 use Getopt::Long;
 use Data::Dumper;
+use List::Util qw(max);
 
 GetOptions(
     'H|hostname=s' => \my $Hostname,
@@ -35,7 +36,7 @@ my %Excludevserverlist;
 @Excludevserverlist{@excludevserverlistarray}=();
 my $excludevserverliststr = join "|", @excludevserverlistarray;
 
-my $version = "1.0.5";
+my $version = "1.0.6";
 
 sub Error {
     print "$0: " . $_[0] . "\n";
@@ -45,7 +46,7 @@ Error('Option --hostname needed!') unless $Hostname;
 Error('Option --username needed!') unless $Username;
 Error('Option --password needed!') unless $Password;
 
-my (@warn_msg, @ok_msg, $conn_msg, @list);
+my (@warn_msg, @ok_msg, $conn_msg, @list, @returnvalue);
 
 my $s = new NaServer( $Hostname, 1, 110 );
 $s->set_transport_type('HTTPS');
@@ -206,21 +207,28 @@ if(scalar(@warn_msg) ){
     $size = @warn_msg;
     print "WARNING: $size vserver(s) are currently not connected\n";
     print join ("", @warn_msg);
-	exit 1;
-} if(scalar(@ok_msg) ){
+	push @returnvalue, 1;
+	# exit 1;
+}
+if(scalar(@ok_msg) ){
     print "OK:\n";
     print join ("", @ok_msg);
-    exit 0;
+	push @returnvalue, 0;
+    # exit 0;
 } else {
 	if ($Vserver) {
 		print "WARNING: no vserver with this name found\n";
-		exit 1;
+		push @returnvalue, 1;
+		# exit 1;
 	} else {
 		print "OK: no vserver(s) with vscan enabled found\n";
-		exit 0;
+		push @returnvalue, 0;
+		# exit 0;
 	}
 
 }
+
+exit max( @returnvalue );
 
 __END__
 

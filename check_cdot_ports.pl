@@ -37,6 +37,8 @@ GetOptions(
     'help|?'     => sub { exec perldoc => -F => $0 or die "Cannot execute perldoc: $!\n"; },
 ) or Error("$0: Error in command line arguments\n");
 
+my $version = "1.0.1";
+
 # separate exclude strings into arrays
 my %Excludelist;
 @Excludelist{@excludelistarray}=();
@@ -125,12 +127,12 @@ while(defined($next)){
 
         # if the port is down, send a warning
         if($link_status eq "down" && $ifgroup) {
-            # my $warn_msg = "$port_name (node $node_name) link-status is $link_status";
-
             # if the port is in an ifgrp, return its name
-
-                $warn_msg = "$port_name (node $node_name; interface group $ifgroup) link-status is $link_status";
-                push (@warn_msg, "$warn_msg\n");
+            $warn_msg = "$port_name (node $node_name; interface group $ifgroup) link-status is $link_status";
+            push (@warn_msg, "$warn_msg\n");
+        } elsif ($link_status eq "down" && !($ifgroup)) {
+            $warn_msg = "$port_name (node $node_name) link-status is $link_status";
+            push (@warn_msg, "$warn_msg\n");
         } elsif ($link_status eq "unknown") {
             my $warn_msg = "$port_name (node $node_name) is $link_status";
             push (@warn_msg, "$warn_msg\n");
@@ -145,6 +147,9 @@ while(defined($next)){
 }
 
 my $size;
+
+# Version output
+print "Script version: $version\n";
 
 if(scalar(@crit_msg) ){
     $size = @crit_msg;
