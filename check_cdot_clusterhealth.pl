@@ -188,7 +188,7 @@ foreach my $node (@result) {
                 $crit_msg .= "State: $node_state, Description: $node_state_description, ";
                 # $h_warn_crit_info->{$node_name}->{'node_state_c'} = 1;
             }
-            if (($node_current_mode ne 'ha') && ($cluster_size lt 2)) {
+            if (($node_current_mode ne 'ha') && ($cluster_size le 2)) {
                 $ok_msg .= "Current HA Mode: $node_current_mode, ";
                 # $h_warn_crit_info->{$node_name}->{'node_mode_c'} = 1;
             } else {
