@@ -32,7 +32,7 @@ GetOptions(
     'help|?'     => sub { exec perldoc => -F => $0 or die "Cannot execute perldoc: $!\n"; },
 ) or Error( "$0: Error in command line arguments\n" );
 
-my $version = "1.0.2";
+my $version = "1.0.3";
 
 my %Excludelist;
 @Excludelist{@excludelistarray}=();
@@ -272,10 +272,10 @@ my $policy_count = @snap_policy;
 my $snapreserve_count = @wrong_snapreserve;
 my $filesysfixed_count = @wrong_filesysfixed;
 
-if (($qos_count != 0) || ($guarantee_count != 0) || ($schedule_count != 0) || ($failover_count != 0) || ($policy_count != 0) || ($snapreserve_count != 0) || ($filesysfixed_count != 0)) {
-
 # Version output
 print "Script version: $version\n";
+
+if (($qos_count != 0) || ($guarantee_count != 0) || ($schedule_count != 0) || ($failover_count != 0) || ($policy_count != 0) || ($snapreserve_count != 0) || ($filesysfixed_count != 0)) {
 
     print "WARNING: Not all recommendations are applied\n";
 
@@ -316,7 +316,7 @@ print "Script version: $version\n";
         }
         print "\n";
     } else {
-        print "OK - no snapmirrors without schedule\n";
+        print "OK - no snapmirrors without schedule - Option is deactivated in code\n";
     }
 
     if ($failover_count != 0) {
