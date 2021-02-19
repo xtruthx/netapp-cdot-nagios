@@ -15,6 +15,7 @@ use strict;
 use warnings;
 
 use lib "/usr/lib/netapp-manageability-sdk/lib/perl/NetApp";
+
 use NaServer;
 use NaElement;
 use Getopt::Long;
@@ -22,11 +23,14 @@ use Getopt::Long;
 use Data::Dumper;
 
 GetOptions(
-    'hostname=s' => \my $Hostname,
+    'hostname|H=s' => \my $Hostname,
     'username=s' => \my $Username,
     'password=s' => \my $Password,
+    'interface-group=s' => \my $ifgrp,
     'help|?'     => sub { exec perldoc => -F => $0 or die "Cannot execute perldoc: $!\n"; },
 ) or Error( "$0: Error in command line arguments\n" );
+
+my $version = "1.0.0";
 
 sub Error {
     print "$0: ".$_[0]."\n";
@@ -35,6 +39,7 @@ sub Error {
 Error( 'Option --hostname needed!' ) unless $Hostname;
 Error( 'Option --username needed!' ) unless $Username;
 Error( 'Option --password needed!' ) unless $Password;
+Error( 'Option --interface-group needed!' ) unless $ifgrp;
 
 my $s = NaServer->new( $Hostname, 1, 3 );
 $s->set_transport_type( "HTTPS" );
@@ -52,12 +57,16 @@ my $node_output = $s->invoke_elem( $node_iterator );
 
 if ($node_output->results_errno != 0) {
     my $r = $node_output->results_reason();
-    print "UNKNOWN: $r\n";
+    print "UNKNOWN [node]: $r\n";
     exit 3;
 }
 
 my $heads = $node_output->child_get( "attributes-list" );
 my @result = $heads->children_get();
+
+# gelöschte ifgrp wird immer noch abgefragt
+# done --- human readable Skriptfolge aufschreiben
+# local cluster 2 node
 
 foreach my $head (@result) {
     my $node_name = $head->child_get_string( "node" );
@@ -65,7 +74,7 @@ foreach my $head (@result) {
     my $ifgrp_iterator = NaElement->new( "net-port-ifgrp-get" );
 
     $ifgrp_iterator->child_add_string( "node", $node_name );
-    $ifgrp_iterator->child_add_string( "ifgrp-name", "a0a" );
+    $ifgrp_iterator->child_add_string( "ifgrp-name", $ifgrp );
     my $ifgrp_output = $s->invoke_elem( $ifgrp_iterator );
 
     if ($ifgrp_output->results_errno != 0) {
@@ -76,7 +85,7 @@ foreach my $head (@result) {
 
         if ($ifgrp_output->results_errno != 0) {
           my $r = $ifgrp_output->results_reason();
-        	print "UNKNOWN: $r\n";
+        	print "UNKNOWN [ifgrp]: $r\n";
         	exit 3;
         }
     }
@@ -101,6 +110,10 @@ foreach my $head (@result) {
 
 my %failed_ports;
 
+my %failed_speed;
+my $failed_speed_count = 0;
+
+
 my $iterator = NaElement->new( "net-port-get-iter" );
 my $tag_elem = NaElement->new( "tag" );
 $iterator->child_add( $tag_elem );
@@ -117,7 +130,7 @@ while(defined( $next )){
 
     if ($lif_output->results_errno != 0) {
         my $r = $lif_output->results_reason();
-        print "UNKNOWN: $r\n";
+        print "UNKNOWN [ports]: $r\n";
         exit 3;
     }
 
@@ -126,13 +139,26 @@ while(defined( $next )){
     if($lifs) {
 
         my @lif_result = $lifs->children_get();
-    
+        
         foreach my $lif (@lif_result) {
   
             my $node = $lif->child_get_string( "node" );
             my $name = $lif->child_get_string( "port" );
             my $state = $lif->child_get_string( "link-status" );
-  
+            my $admin_speed = $lif->child_get_string( "administrative-speed" );
+            my $operational_speed = $lif->child_get_string( "operational-speed" );
+
+            if($state eq "up"){
+                unless(($name =~ m/^a0/) || ($name =~ m/^e0M/)){ 
+
+                    if(($admin_speed ne "auto") && ($admin_speed ne $operational_speed)){
+                        push( @{$failed_speed{$node}}, $name);
+                        $failed_speed_count++;
+                    }
+                }
+
+            }
+
             if($state ne "up") {
                 push( @{$failed_ports{$node}}, $name);
             }
@@ -221,17 +247,35 @@ if($nics) {
     }
 }
 
+# Version output
+print "Script version: $version\n";
+
 if(@failed_ports && @nic_errors) {
     print "CRITICAL: ";
-    print @failed_ports;
+    print join(", ", @failed_ports);
     print " in ifgrp and not up\n";
-    print join(" ", @nic_errors);
+    print join(", ", @nic_errors);
     print " with CRC errors\n";
     exit 2;
 } elsif(@failed_ports){
     print "CRITICAL: ";
-    print @failed_ports;
+    print join(", ", @failed_ports);
     print " in ifgrp and not up\n";
+    exit 2;
+} elsif($failed_speed_count ne 0){
+    print "CRITICAL: $failed_speed_count ports speed mismatch: ";
+    foreach my $node (keys %failed_speed){
+
+        print $node . ": ";
+
+        my $ports = $failed_speed{$node};
+
+        foreach my $port (@$ports){
+            print $port . ", ";
+        }
+
+    }
+    print "\n";
     exit 2;
 } elsif(@nic_errors){
     print "CRITICAL: ";
@@ -275,6 +319,10 @@ The Login Username of the NetApp to monitor
 =item --password PASSWORD
 
 The Login Password of the NetApp to monitor
+
+=item --interface-group IFGROUP
+
+The interface group of the NetApp to monitor
 
 =item -help
 

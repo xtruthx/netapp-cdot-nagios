@@ -43,6 +43,7 @@ GetOptions(
 	'autosize-warning=s' => \my $AutosizeWarning,
 	'autosize-critical=s' => \my $AutosizeCritical,
 	'state-critical=s' => \my $StateCritical,
+	'snapshot-limit=i' => \my $SnapshotLimit,
     'P|perf'     => \my $perf,
     'V|volume=s'   => \my $Volume,
     'vserver=s'  => \my $Vserver,
@@ -211,6 +212,7 @@ $SnapIgnore = "false" unless $SnapIgnore;
 $AutosizeWarning = 90 unless $AutosizeWarning;
 $AutosizeCritical = 95 unless $AutosizeCritical;
 $StateCritical = "offline" unless $StateCritical;
+$SnapshotLimit = 230 unless $SnapshotLimit;
 
 my ($crit_msg, $warn_msg, $ok_msg);
 # Store all perf data points for output at end
@@ -266,6 +268,11 @@ my $xi_state = new NaElement('volume-state-attributes');
 $xi1->child_add($xi_state);
 $xi_state->child_add_string('state','<state>');
 
+# get volume snapshot count
+my $xi_snapshot = new NaElement('volume-snapshot-attributes');
+$xi1->child_add($xi_snapshot);
+$xi_snapshot->child_add_string('snapshot-count','<snapshot-count>');
+
 # query only volumes with given names
 my $xi4 = new NaElement('query');
 $iterator->child_add($xi4);
@@ -302,7 +309,8 @@ while(defined($next)){
 
 	unless($volumes){
 	    print "CRITICAL: no volume matching this name\n";
-	    exit 2;
+	    #exit 2;
+		last;
 	}
 	
 	my @result = $volumes->children_get();
@@ -361,9 +369,13 @@ while(defined($next)){
 				$h_warn_crit_info->{$vol_name}->{'inode_percent'}="unknown, volume is offline";
 				$h_warn_crit_info->{$vol_name}->{'snap_percent'}="unknown, volume is offline";
 				$h_warn_crit_info->{$vol_name}->{'autosize_percent'}="unknown, volume is offline";
-				
-				$crit_msg .= ".\n";
-				push (@crit_msg, "$crit_msg" );
+
+				if($Volume) {
+					push (@crit_msg, "Volume $vol_name is $vol_state");   
+				} else {
+					$crit_msg .= ".\n";
+					push (@crit_msg, "$crit_msg" );
+				}
 
 				next;
 			} else {
@@ -411,27 +423,34 @@ while(defined($next)){
 			my($autogrow_percent,$autogrow_bytes);
 
 			if($vol_autogrow_info) {
-				$autogrow_bytes = $vol_autogrow_info->child_get_string("maximum-size") / 1073741824;	
-				$autogrow_percent = $space_total / $autogrow_bytes * 100;
+				$autogrow_bytes = $vol_autogrow_info->child_get_string("maximum-size") / 1073741824;
+				$autogrow_percent = $space_used / $autogrow_bytes * 100;
 				$autogrow_percent = sprintf("%.0f",$autogrow_percent);
 
 				$perfdata{$vol_name}{'autosize_grow'}=$autogrow_percent;
-				
 			} else {
 				print "CRITICAL: no volume autosize info could be retrieved \n";
 			}
 
+			# get snapshot count for volume
+			my $vol_snapshot_info = $vol->child_get("volume-snapshot-attributes");
+			my $snapshot_count = $vol_snapshot_info->child_get_string("snapshot-count");
+
 			if($space_used >1024){
 				$space_used /= 1024;
 				$space_total /= 1024;
+				$autogrow_bytes /= 1024;
+				
 				$space_used = sprintf("%.2f TB", $space_used);
 				$space_total = sprintf("%.2f TB", $space_total);
+				$autogrow_bytes = sprintf("%.2f TB", $autogrow_bytes);
 			} else {
 				$space_used = sprintf("%.2f GB", $space_used);
 				$space_total = sprintf("%.2f GB", $space_total);
+				$autogrow_bytes = sprintf("%.2f GB", $autogrow_bytes);
 			}
 
-			if(($percent>$SizeCritical) || ($inode_percent>$InodeCritical) || (($SnapIgnore eq "false") && ($snapusedpct > $SnapCritical) || ($autogrow_percent > $AutosizeCritical))) {
+			if(($percent>$SizeCritical) || ($inode_percent>$InodeCritical) || (($SnapIgnore eq "false") && ($snapusedpct > $SnapCritical)) || ($autogrow_percent > $AutosizeCritical)) {
 
 				$h_warn_crit_info->{$vol_name}->{'space_percent'}=$percent;
 				$h_warn_crit_info->{$vol_name}->{'inode_percent'}=$inode_percent;
@@ -465,17 +484,17 @@ while(defined($next)){
 				}
 
 				if ($autogrow_percent > $AutosizeCritical) {
-					$crit_msg .= "Size: $space_total/$autogrow_bytes, $autogrow_percent%[>$AutosizeCritical%], ";
+					$crit_msg .= "Autosize: $space_total/$autogrow_bytes, $autogrow_percent%[>$AutosizeCritical%], ";
 					$h_warn_crit_info->{$vol_name}->{'autosize_percent_c'} = 1;
 				} elsif ($autogrow_percent > $AutosizeWarning) {
-					$crit_msg .= "Size: $space_total/$autogrow_bytes, $autogrow_percent%[>$AutosizeWarning%], ";
+					$crit_msg .= "Autosize: $space_used/$autogrow_bytes, $autogrow_percent%[>$AutosizeWarning%], ";
 					$h_warn_crit_info->{$vol_name}->{'autosize_percent_w'} = 1;
 				}
 
 				chop($crit_msg); chop($crit_msg); $crit_msg .= ")";
 				push (@crit_msg, "$crit_msg\n" );
 
-			} elsif (($percent>$SizeWarning) || ($inode_percent>$InodeWarning) || (($SnapIgnore eq "false") && ($snapusedpct > $SnapWarning) || ($autogrow_percent > $AutosizeWarning))) {
+			} elsif (($percent>$SizeWarning) || ($inode_percent>$InodeWarning) || (($SnapIgnore eq "false") && ($snapusedpct > $SnapWarning)) || ($autogrow_percent > $AutosizeWarning) || ($snapshot_count > $SnapshotLimit)) {
 
 				$h_warn_crit_info->{$vol_name}->{'space_percent'}=$percent;
 				$h_warn_crit_info->{$vol_name}->{'inode_percent'}=$inode_percent;
@@ -496,9 +515,13 @@ while(defined($next)){
 					$warn_msg .= "Snapreserve: $snapusedpct%[>$SnapWarning%], ";
 					$h_warn_crit_info->{$vol_name}->{'snap_percent_w'} = 1;
 				}
-				if ($autogrow_percent > $AutosizeCritical) {
-					$warn_msg .= "Size: $space_total/$autogrow_bytes, $autogrow_percent%[>$AutosizeWarning%], ";
+				if ($autogrow_percent > $AutosizeWarning) {
+					$warn_msg .= "Autosize: $space_used/$autogrow_bytes, $autogrow_percent%[>$AutosizeWarning%], ";
 					$h_warn_crit_info->{$vol_name}->{'autosize_percent_w'} = 1;
+				}
+				if ($snapshot_count > $SnapshotLimit) {
+					$warn_msg .= "Snapshots: $snapshot_count [>$SnapshotLimit], ";
+					#$h_warn_crit_info->{$vol_name}->{'autosize_percent_c'} = 1;
 				}
 
 				chop($warn_msg); chop($warn_msg); $warn_msg .= ")";
@@ -508,7 +531,7 @@ while(defined($next)){
 				if ($SnapIgnore eq "true"){
 					push (@ok_msg, "$vol_name (Size: $space_used/$space_total, $percent%, Inodes: $inode_percent%, Maximum Autosize Grow: $autogrow_percent%)\n" );
 				} else {
-					push (@ok_msg, "$vol_name (Size: $space_used/$space_total, $percent%, Inodes: $inode_percent%, Snapreserve: $snapusedpct%, Maximum Autosize Grow: $autogrow_percent%)\n" );
+					push (@ok_msg, "$vol_name (Size: $space_used/$space_total, $percent%, Inodes: $inode_percent%, Snapreserve: $snapusedpct%, Maximum Autosize Grow: $autogrow_percent%), Snapshots: $snapshot_count\n" );
 				}
 			}
 
@@ -550,11 +573,15 @@ foreach my $vol ( keys(%perfdata) ) {
 	}
     # DS[6] - Maximum Autosize Threshold
 	if( $perfdata{$vol}{'autosize_grow'} ) {
-    	$perfdatavolstr.=sprintf(" autosize_grow=%dB", $perfdata{$vol}{'autosize_grow'} );
+    	$perfdatavolstr.=sprintf(" autosize_grow=%d", $perfdata{$vol}{'autosize_grow'} );
 	}
-	# # DS[7] - Volume state
+	# DS[7] - Volume state
 	if( $perfdata{$vol}{'state'} ) {
 		$perfdatavolstr.=sprintf(" state=%s", $perfdata{$vol}{'state'} );
+	}
+	# DS[8] - Volume snapshot count
+	if( $perfdata{$vol}{'snapshot_count'} ) {
+		$perfdatavolstr.=sprintf(" state=%s", $perfdata{$vol}{'snapshot_count'} );
 	}
 }
 $perfdatavolstr =~ s/^\s+//;
@@ -694,6 +721,10 @@ The Critical threshold for autosize grow maximum. Defaults to 90%.
 =item --state-critical STATE_CRITICAL
 
 The Critical threshold for volume status. Default is "offline".
+
+=item --snapshot-limit SNAPSHOT_LIMIT
+
+The threshold for volume snapshot counts. Default is 230.
 
 =item -V | --volume VOLUME
 

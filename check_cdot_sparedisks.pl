@@ -83,19 +83,39 @@ while(defined($next)){
     $next = $output->child_get_string("next-tag");
 }
 
+# if ($not_zeroed){
+#     print "WARNING: $not_zeroed spare disk(s) not zeroed\n";
+#     exit 1;
+# } elsif($not_assigned){
+# 	print "INFO: $not_assigned disk(s) not assigned\n";
+# 	exit 0;
+# } elsif($spare_counter eq 0){
+# 	print "CRITICAL: number of spare disks is 0\n";
+# 	exit 2;
+# } else {
+#     print "OK: All spare disks zeroed\n";
+#     exit 0;
+# }
+
+my $ret = 0;
+
 if ($not_zeroed){
     print "WARNING: $not_zeroed spare disk(s) not zeroed\n";
-    exit 2;
-} elsif($not_assigned){
+    $ret = 1;
+}  else {
+    print "OK: All $spare_counter spare disks zeroed\n";
+    # return code allready set to 0
+}
+if ($not_assigned){
 	print "INFO: $not_assigned disk(s) not assigned\n";
-	exit 2;
-} elsif($spare_counter eq 0){
+	# return code allready set to 0
+} 
+if ($spare_counter eq 0){
 	print "CRITICAL: number of spare disks is 0\n";
+	$ret = 2;
 }
-} else {
-    print "OK: All spare disks zeroed\n";
-    exit 0;
-}
+
+exit $ret;
 
 __END__
 

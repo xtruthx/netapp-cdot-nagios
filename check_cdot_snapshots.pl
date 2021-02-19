@@ -11,6 +11,7 @@
 # --
 
 use lib "/usr/lib/netapp-manageability-sdk/lib/perl/NetApp";
+
 use NaServer;
 use NaElement;
 use strict;
@@ -19,9 +20,9 @@ use Getopt::Long;
 use Data::Dumper;
 
 GetOptions(
-    'hostname=s'        => \my $Hostname,
-    'username=s'        => \my $Username,
-    'password=s'        => \my $Password,
+    'H|hostname=s'        => \my $Hostname,
+    'u|username=s'        => \my $Username,
+    'p|password=s'        => \my $Password,
     'age=i'             => \my $AgeOpt,
     'numbersnapshot=i'  => \my $snapshotnumber,
     'retentiondays=i'   => \my $retention_days,
@@ -63,6 +64,7 @@ my $s = NaServer->new( $Hostname, 1, 3 );
 $s->set_transport_type("HTTPS");
 $s->set_style("LOGIN");
 $s->set_admin_user( $Username, $Password );
+$s->set_timeout(30);
 
 single_volume_check() if $volumename;
 
@@ -93,7 +95,7 @@ while(defined($next)){
             $tag_elem->set_content($next);
         }
 
-        $snap_iterator->child_add_string("max-records", '10000');
+        $snap_iterator->child_add_string("max-records", '2500');
         my $snap_output = $s->invoke_elem($snap_iterator);
 
         if ($snap_output->results_errno != 0) {
@@ -143,7 +145,7 @@ while(defined($next)){
             if($age >= $AgeOpt){
                 unless(grep(/$vol_name/, @snapmirrors)){
                     unless($snap_name =~ m/^clone/){
-                        push @old_snapshots, "$vol_name/$snap_name";
+                        push @old_snapshots, "$vol_name/$snap_name\n";
                     }
                 }
             }
@@ -174,7 +176,7 @@ if (@old_snapshots) {
             print "$snap ($busy_snapshots{$snap})\n";
         }
     }
-    exit 1;
+    exit 0;
 }
 else {
     if (!%busy_snapshots){
@@ -211,7 +213,7 @@ sub snapmirror_volumes {
             $snapmirror_tag_elem->set_content($snapmirror_next_tag);
         }
 
-        $snapmirror_iterator->child_add_string("max-records", '10000');
+        $snapmirror_iterator->child_add_string("max-records", '5000');
         my $snapmirror_output = $s->invoke_elem($snapmirror_iterator);
 
         if ($snapmirror_output->results_errno != 0) {
@@ -227,7 +229,7 @@ sub snapmirror_volumes {
 
                 foreach my $mirror (@snap_relations){
                     my $dest_vol = $mirror->child_get_string("destination-volume");
-                    push(@volumes,$dest_vol);
+                    push(@volumes,$dest_vol."\n");
                 }
             }
         }
@@ -393,7 +395,7 @@ Checks if old ( > 90 days ) Snapshots exist
 
 =item --hostname FQDN
 
-The Hostname of the NetApp to monitor (Cluster or Node MGMT)
+The Hostname of the NetApp to monitor
 
 =item --username USERNAME
 

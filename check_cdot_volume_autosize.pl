@@ -1,5 +1,4 @@
 #!/usr/bin/perl
-
 # nagios: -epn
 # --
 # check_cdot_volume - Check Volume Usage
@@ -15,6 +14,7 @@ use strict;
 use warnings;
 
 use lib "/usr/lib/netapp-manageability-sdk/lib/perl/NetApp";
+
 
 use NaServer;
 use NaElement;
@@ -54,7 +54,7 @@ GetOptions(
     'h|help'     => sub { exec perldoc => -F => $0 or die "Cannot execute perldoc: $!\n"; },
 ) or Error("$0: Error in command line arguments\n");
 
-# Filter through full names or regex
+# why do we use this?
 my %Excludelist;
 @Excludelist{@excludelistarray}=();
 my $excludeliststr = join "|", @excludelistarray;
@@ -68,72 +68,72 @@ sub Error {
 # _c = critical in red
 # _w = warning in yellow
 # rest = ok in green
-# sub draw_html_table {
-# 	my ($hrefInfo) = @_;
-# 	my @headers = qw(volume space-usage inodes-usage snap-usage autosize-maximum state);
-# 	# define columns that will be filled and shown
-# 	my @columns = qw(space_percent inode_percent snap_percent autosize_percent state);
-# 	my $html_table="";
-# 	$html_table .= "<table class=\"common-table\" style=\"border-collapse:collapse; border: 1px solid black;\">";
-# 	$html_table .= "<tr>";
-# 	foreach (@headers) {
-# 		$html_table .= "<th style=\"text-align: left; padding-left: 4px; padding-right: 6px;\">".$_."</th>";
-# 	}
-# 	$html_table .= "</tr>";
-# 	foreach my $volume (sort {lc $a cmp lc $b} keys %$hrefInfo) {
-# 		$html_table .= "<tr>";
-# 		$html_table .= "<tr style=\"border: 1px solid black;\">";
-# 		$html_table .= "<td style=\"text-align: left; padding-left: 4px; padding-right: 6px; background-color: #acacac;\">".$volume."</td>";
-# 		# loop through all attributes defined in @columns
-# 		foreach my $attr (@columns) {
-# 			if ($attr eq "space_percent") {
-# 				if (defined $hrefInfo->{$volume}->{"space_percent_c"}){
-# 					$html_table .= "<td class=\"state-critical\" style=\"text-align: left; padding-left: 4px; padding-right: 6px; background-color: #f83838\">".$hrefInfo->{$volume}->{$attr}."</td>";
-# 				} elsif (defined $hrefInfo->{$volume}->{"space_percent_w"}){
-# 					$html_table .= "<td class=\"state-warning\" style=\"text-align: left; padding-left: 4px; padding-right: 6px; background-color: #FFFF00\">".$hrefInfo->{$volume}->{$attr}."</td>";
-# 				} else {
-# 					$html_table .= "<td class=\"state-ok\" style=\"text-align: left; padding-left: 4px; padding-right: 6px; background-color: #33ff00\">".$hrefInfo->{$volume}->{$attr}."</td>";
-# 				}
-# 			} elsif ($attr eq "inode_percent") {
-# 				if (defined $hrefInfo->{$volume}->{"inode_percent_c"}){
-# 					$html_table .= "<td class=\"state-critical\" style=\"text-align: left; padding-left: 4px; padding-right: 6px; background-color: #f83838\">".$hrefInfo->{$volume}->{$attr}."</td>";
-# 				} elsif (defined $hrefInfo->{$volume}->{"inode_percent_w"}){
-# 					$html_table .= "<td class=\"state-warning\" style=\"text-align: left; padding-left: 4px; padding-right: 6px; background-color: #FFFF00\">".$hrefInfo->{$volume}->{$attr}."</td>";
-# 				} else {
-# 					$html_table .= "<td class=\"state-ok\" style=\"text-align: left; padding-left: 4px; padding-right: 6px; background-color: #33ff00\">".$hrefInfo->{$volume}->{$attr}."</td>";
-# 				}
-# 			} elsif ($attr eq "snap_percent") {
-# 				if (defined $hrefInfo->{$volume}->{"snap_percent_c"}){
-# 					$html_table .= "<td class=\"state-critical\" style=\"text-align: left; padding-left: 4px; padding-right: 6px; background-color: #f83838\">".$hrefInfo->{$volume}->{$attr}."</td>";
-# 				} elsif (defined $hrefInfo->{$volume}->{"snap_percent_w"}){
-# 					$html_table .= "<td class=\"state-warning\" style=\"text-align: left; padding-left: 4px; padding-right: 6px; background-color: #FFFF00\">".$hrefInfo->{$volume}->{$attr}."</td>";
-# 				} else {
-# 					$html_table .= "<td class=\"state-ok\" style=\"text-align: left; padding-left: 4px; padding-right: 6px; background-color: #33ff00\">".$hrefInfo->{$volume}->{$attr}."</td>";
-# 				}
-# 			} elsif ($attr eq "autosize_percent") {
-# 				if (defined $hrefInfo->{$volume}->{"autosize_percent_c"}){
-# 					$html_table .= "<td class=\"state-critical\" style=\"text-align: left; padding-left: 4px; padding-right: 6px; background-color: #f83838\">".$hrefInfo->{$volume}->{$attr}."</td>";
-# 				} elsif (defined $hrefInfo->{$volume}->{"autosize_percent_w"}){
-# 					$html_table .= "<td class=\"state-warning\" style=\"text-align: left; padding-left: 4px; padding-right: 6px; background-color: #FFFF00\">".$hrefInfo->{$volume}->{$attr}."</td>";
-# 				} else {
-# 					$html_table .= "<td class=\"state-ok\" style=\"text-align: left; padding-left: 4px; padding-right: 6px; background-color: #33ff00\">".$hrefInfo->{$volume}->{$attr}."</td>";
-# 				}
-# 			} elsif ($attr eq "state") {
-# 				if (defined $hrefInfo->{$volume}->{"volume_state_c"}){
-# 					$html_table .= "<td class=\"state-critical\" style=\"text-align: left; padding-left: 4px; padding-right: 6px; background-color: #f83838\">".$hrefInfo->{$volume}->{$attr}."</td>";
-# 				} else {
-# 					$html_table .= "<td class=\"state-ok\" style=\"text-align: left; padding-left: 4px; padding-right: 6px; background-color: #33ff00\">".$hrefInfo->{$volume}->{$attr}."</td>";
-# 				}
-# 			} else {
-# 				$html_table .= "<td style=\"text-align: left; padding-left: 4px; padding-right: 6px;\">".$hrefInfo->{$volume}->{$attr}."</td>";
-# 			}
-# 		}
-# 		$html_table .= "</tr>";
-# 	}
-# 	$html_table .= "</table>\n";
+sub draw_html_table {
+	my ($hrefInfo) = @_;
+	my @headers = qw(volume space-usage inodes-usage snap-usage autosize-maximum state);
+	# define columns that will be filled and shown
+	my @columns = qw(space_percent inode_percent snap_percent autosize_percent state);
+	my $html_table="";
+	$html_table .= "<table class=\"common-table\" style=\"border-collapse:collapse; border: 1px solid black;\">";
+	$html_table .= "<tr>";
+	foreach (@headers) {
+		$html_table .= "<th style=\"text-align: left; padding-left: 4px; padding-right: 6px;\">".$_."</th>";
+	}
+	$html_table .= "</tr>";
+	foreach my $volume (sort {lc $a cmp lc $b} keys %$hrefInfo) {
+		$html_table .= "<tr>";
+		$html_table .= "<tr style=\"border: 1px solid black;\">";
+		$html_table .= "<td style=\"text-align: left; padding-left: 4px; padding-right: 6px; background-color: #acacac;\">".$volume."</td>";
+		# loop through all attributes defined in @columns
+		foreach my $attr (@columns) {
+			if ($attr eq "space_percent") {
+				if (defined $hrefInfo->{$volume}->{"space_percent_c"}){
+					$html_table .= "<td class=\"state-critical\" style=\"text-align: left; padding-left: 4px; padding-right: 6px; background-color: #f83838\">".$hrefInfo->{$volume}->{$attr}."</td>";
+				} elsif (defined $hrefInfo->{$volume}->{"space_percent_w"}){
+					$html_table .= "<td class=\"state-warning\" style=\"text-align: left; padding-left: 4px; padding-right: 6px; background-color: #FFFF00\">".$hrefInfo->{$volume}->{$attr}."</td>";
+				} else {
+					$html_table .= "<td class=\"state-ok\" style=\"text-align: left; padding-left: 4px; padding-right: 6px; background-color: #33ff00\">".$hrefInfo->{$volume}->{$attr}."</td>";
+				}
+			} elsif ($attr eq "inode_percent") {
+				if (defined $hrefInfo->{$volume}->{"inode_percent_c"}){
+					$html_table .= "<td class=\"state-critical\" style=\"text-align: left; padding-left: 4px; padding-right: 6px; background-color: #f83838\">".$hrefInfo->{$volume}->{$attr}."</td>";
+				} elsif (defined $hrefInfo->{$volume}->{"inode_percent_w"}){
+					$html_table .= "<td class=\"state-warning\" style=\"text-align: left; padding-left: 4px; padding-right: 6px; background-color: #FFFF00\">".$hrefInfo->{$volume}->{$attr}."</td>";
+				} else {
+					$html_table .= "<td class=\"state-ok\" style=\"text-align: left; padding-left: 4px; padding-right: 6px; background-color: #33ff00\">".$hrefInfo->{$volume}->{$attr}."</td>";
+				}
+			} elsif ($attr eq "snap_percent") {
+				if (defined $hrefInfo->{$volume}->{"snap_percent_c"}){
+					$html_table .= "<td class=\"state-critical\" style=\"text-align: left; padding-left: 4px; padding-right: 6px; background-color: #f83838\">".$hrefInfo->{$volume}->{$attr}."</td>";
+				} elsif (defined $hrefInfo->{$volume}->{"snap_percent_w"}){
+					$html_table .= "<td class=\"state-warning\" style=\"text-align: left; padding-left: 4px; padding-right: 6px; background-color: #FFFF00\">".$hrefInfo->{$volume}->{$attr}."</td>";
+				} else {
+					$html_table .= "<td class=\"state-ok\" style=\"text-align: left; padding-left: 4px; padding-right: 6px; background-color: #33ff00\">".$hrefInfo->{$volume}->{$attr}."</td>";
+				}
+			} elsif ($attr eq "autosize_percent") {
+				if (defined $hrefInfo->{$volume}->{"autosize_percent_c"}){
+					$html_table .= "<td class=\"state-critical\" style=\"text-align: left; padding-left: 4px; padding-right: 6px; background-color: #f83838\">".$hrefInfo->{$volume}->{$attr}."</td>";
+				} elsif (defined $hrefInfo->{$volume}->{"autosize_percent_w"}){
+					$html_table .= "<td class=\"state-warning\" style=\"text-align: left; padding-left: 4px; padding-right: 6px; background-color: #FFFF00\">".$hrefInfo->{$volume}->{$attr}."</td>";
+				} else {
+					$html_table .= "<td class=\"state-ok\" style=\"text-align: left; padding-left: 4px; padding-right: 6px; background-color: #33ff00\">".$hrefInfo->{$volume}->{$attr}."</td>";
+				}
+			} elsif ($attr eq "state") {
+				if (defined $hrefInfo->{$volume}->{"volume_state_c"}){
+					$html_table .= "<td class=\"state-critical\" style=\"text-align: left; padding-left: 4px; padding-right: 6px; background-color: #f83838\">".$hrefInfo->{$volume}->{$attr}."</td>";
+				} else {
+					$html_table .= "<td class=\"state-ok\" style=\"text-align: left; padding-left: 4px; padding-right: 6px; background-color: #33ff00\">".$hrefInfo->{$volume}->{$attr}."</td>";
+				}
+			} else {
+				$html_table .= "<td style=\"text-align: left; padding-left: 4px; padding-right: 6px;\">".$hrefInfo->{$volume}->{$attr}."</td>";
+			}
+		}
+		$html_table .= "</tr>";
+	}
+	$html_table .= "</table>\n";
 
-# 	return $html_table;
-# }
+	return $html_table;
+}
 
 # write performance data for plugin
 sub perfdata_to_file {
@@ -237,7 +237,6 @@ my $xi2 = new NaElement('volume-id-attributes');
 $xi1->child_add($xi2);
 $xi2->child_add_string('name','<name>');
 
-# get volume space attributes
 my $xi3 = new NaElement('volume-space-attributes');
 $xi1->child_add($xi3);
 
@@ -266,7 +265,7 @@ my $xi_state = new NaElement('volume-state-attributes');
 $xi1->child_add($xi_state);
 $xi_state->child_add_string('state','<state>');
 
-# query only volumes with given names
+
 my $xi4 = new NaElement('query');
 $iterator->child_add($xi4);
 my $xi5 = new NaElement('volume-attributes');
@@ -317,37 +316,37 @@ while(defined($next)){
 	
 	foreach my $vol (@result){
 
-		# get basic volume id info
         my $vol_info = $vol->child_get("volume-id-attributes");
         my $vserver_name = $vol_info->child_get_string("owning-vserver-name");
         my $vol_name = "$vserver_name/" . $vol_info->child_get_string("name");
 
-		# check volume status first
+		# get autosize data for volume
+		my $vol_autogrow_info = $vol->child_get("volume-autosize-attributes");
+
 		my $vol_state_info = $vol->child_get("volume-state-attributes");
 
         if($Volume && $Vserver) {
-            next if($vserver_name ne $Vserver);
+            if($vserver_name ne $Vserver) {
+                next;
+            }
         }
 
-		next if exists $Excludelist{$vol_name};
-	
-		if ($regexp and $excludeliststr) {
-			next if ($vol_name =~ m/$excludeliststr/);
-		}
-
+        my $vol_state;
 
         if (!$vol_state_info) {
-            push (@ok_msg, "Volume $vol_name is unknown (mirror volume?).\n");                  
-			
-			# $h_warn_crit_info->{$vol_name}->{'state'}=$vol_state;
-			# $h_warn_crit_info->{$vol_name}->{'space_percent'}="unknown, volume is in unknown state";
-			# $h_warn_crit_info->{$vol_name}->{'inode_percent'}="unknown, volume is in unknown state";
-			# $h_warn_crit_info->{$vol_name}->{'snap_percent'}="unknown, volume is in unknown state";
-			# $h_warn_crit_info->{$vol_name}->{'autosize_percent'}="unknown, volume is in unknown state";
+            $h_warn_crit_info->{$vol_name}->{'state'}="unknown";
+
+            if($Volume) {
+                push (@ok_msg, "Volume $vol_name is offline.");   
+            } else {
+                push (@ok_msg, "Volume $vol_name is offline (mirror volume?).\n");                  
+            }
+
+            $vol_state = "unknown";
 
 			next;
         } else {
-            my $vol_state = $vol_state_info->child_get_string("state");
+            $vol_state = $vol_state_info->child_get_string("state");
 
 			if ($vol_state eq $StateCritical){
 				my $crit_msg = "Volume $vol_name ";
@@ -357,10 +356,6 @@ while(defined($next)){
 				$h_warn_crit_info->{$vol_name}->{'volume_state_c'} = 1;
 
 				$h_warn_crit_info->{$vol_name}->{'state'}=$vol_state;
-				$h_warn_crit_info->{$vol_name}->{'space_percent'}="unknown, volume is offline";
-				$h_warn_crit_info->{$vol_name}->{'inode_percent'}="unknown, volume is offline";
-				$h_warn_crit_info->{$vol_name}->{'snap_percent'}="unknown, volume is offline";
-				$h_warn_crit_info->{$vol_name}->{'autosize_percent'}="unknown, volume is offline";
 				
 				$crit_msg .= ".\n";
 				push (@crit_msg, "$crit_msg" );
@@ -375,8 +370,6 @@ while(defined($next)){
         	}
 		}
 
-
-		# check inode data
 		my $inode_info = $vol->child_get("volume-inode-attributes");
 	
 		if($inode_info){
@@ -385,7 +378,14 @@ while(defined($next)){
 			my $inode_total = $inode_info->child_get_int("files-total");
 			
 			my $inode_percent = sprintf("%.3f", $inode_used/$inode_total*100);
-
+			
+			next if exists $Excludelist{$vol_name};
+		
+			if ($regexp and $excludeliststr) {
+				if ($vol_name =~ m/$excludeliststr/) {
+					next;
+				}
+			}
 
 			my $vol_space = $vol->child_get("volume-space-attributes");
 			my $percent = $vol_space->child_get_int("percentage-size-used");
@@ -393,6 +393,8 @@ while(defined($next)){
 			my $snapused = $vol_space->child_get_int("size-used-by-snapshots");
 			my $snapusedpct = $vol_space->child_get_int("percentage-snapshot-reserve-used");
 			my $sizetotal = $vol_space->child_get_int("size-total");
+
+			my($autogrow_percent,$autogrow_bytes);
 		
 			$perfdata{$vol_name}{'byte_used'}=$vol_space->child_get_int("size-used");
 			$perfdata{$vol_name}{'byte_total'}=$sizetotal;
@@ -405,18 +407,18 @@ while(defined($next)){
 			my $space_used = $perfdata{$vol_name}{'byte_used'}/1073741824;
 			my $space_total = $perfdata{$vol_name}{'byte_total'}/1073741824;
 
-			
-			# get autosize data for volume
-			my $vol_autogrow_info = $vol->child_get("volume-autosize-attributes");
-			my($autogrow_percent,$autogrow_bytes);
-
 			if($vol_autogrow_info) {
 				$autogrow_bytes = $vol_autogrow_info->child_get_string("maximum-size") / 1073741824;	
-				$autogrow_percent = $space_total / $autogrow_bytes * 100;
-				$autogrow_percent = sprintf("%.0f",$autogrow_percent);
+				$autogrow_percent = $space_used / $autogrow_bytes;
 
+				if ( $autogrow_percent > 1) {
+					$autogrow_percent = sprintf("%.0f", $autogrow_percent);
+				} else {
+					$autogrow_percent = sprintf("%.0f", ($autogrow_percent*100));
+				}	
 				$perfdata{$vol_name}{'autosize_grow'}=$autogrow_percent;
 				
+				# print "AUTOSIZE: ".$autogrow_percent."\n";
 			} else {
 				print "CRITICAL: no volume autosize info could be retrieved \n";
 			}
@@ -465,10 +467,10 @@ while(defined($next)){
 				}
 
 				if ($autogrow_percent > $AutosizeCritical) {
-					$crit_msg .= "Size: $space_total/$autogrow_bytes, $autogrow_percent%[>$AutosizeCritical%], ";
+					$crit_msg .= "Maximum Autosize Grow: $autogrow_percent%[>$AutosizeCritical%], ";
 					$h_warn_crit_info->{$vol_name}->{'autosize_percent_c'} = 1;
 				} elsif ($autogrow_percent > $AutosizeWarning) {
-					$crit_msg .= "Size: $space_total/$autogrow_bytes, $autogrow_percent%[>$AutosizeWarning%], ";
+					$crit_msg .= "Maximum Autosize Grow: $autogrow_percent%[>$AutosizeWarning%], ";
 					$h_warn_crit_info->{$vol_name}->{'autosize_percent_w'} = 1;
 				}
 
@@ -484,11 +486,11 @@ while(defined($next)){
 
 				my $warn_msg = "$vol_name (";
 
-				if ($percent > $SizeWarning){
+				if ($percent>$SizeWarning){
 					$warn_msg .= "Size: $space_used/$space_total, $percent%[>$SizeWarning%], ";
 					$h_warn_crit_info->{$vol_name}->{'space_percent_w'} = 1;
 				}
-				if ($inode_percent > $InodeWarning){
+				if ($inode_percent>$InodeWarning){
 					$warn_msg .= "Inodes: $inode_percent%[>$InodeWarning%], ";
 					$h_warn_crit_info->{$vol_name}->{'inode_percent_w'} = 1;
 				}
@@ -497,7 +499,7 @@ while(defined($next)){
 					$h_warn_crit_info->{$vol_name}->{'snap_percent_w'} = 1;
 				}
 				if ($autogrow_percent > $AutosizeCritical) {
-					$warn_msg .= "Size: $space_total/$autogrow_bytes, $autogrow_percent%[>$AutosizeWarning%], ";
+					$warn_msg .= "Maximum Autosize Grow: $autogrow_percent%[>$AutosizeWarning%], ";
 					$h_warn_crit_info->{$vol_name}->{'autosize_percent_w'} = 1;
 				}
 
@@ -560,10 +562,9 @@ foreach my $vol ( keys(%perfdata) ) {
 $perfdatavolstr =~ s/^\s+//;
 my $perfdataallstr = "$perfdataglobalstr $perfdatavolstr";
 
-
 if(scalar(@crit_msg) ){
     print "CRITICAL:\n";
-    print join ("", @crit_msg);
+    print join ("", @crit_msg, "\nWARNING:\n", @warn_msg);
     if ($perf) { 
 		if($perfdatadir) {
 			perfdata_to_file($STARTTIME, $perfdatadir, $hostdisplay, $perfdataservicedesc, $perfdataallstr);
@@ -572,11 +573,10 @@ if(scalar(@crit_msg) ){
 			print "|$perfdataallstr\n";
 		}
 	} else {
-		print "\n";
+		print "|\n";
 	}
-	#print Dumper($h_warn_crit_info);
-	# my $strHTML = draw_html_table($h_warn_crit_info);
-    # print $strHTML if $output_html; 
+	#my $strHTML = draw_html_table($h_warn_crit_info);
+    #print $strHTML if $output_html; 
 	exit 2;
 # } elsif(scalar(@warn_msg) ){
 } if(scalar(@warn_msg) ){
@@ -633,7 +633,6 @@ check_cdot_aggr.pl -H HOSTNAME -u USERNAME -p PASSWORD \
            --inode-critical PERCENT_CRITICAL \
 	       --autosize-warning PERCENT_WARNING \
            --autosize-critical PERCENT_CRITICAL \
-		   --state-critical STATE_CRITICAL \
            [--perfdatadir DIR] [--perfdataservicedesc SERVICE-DESC] \
 		   [--hostdisplay HOSTDISPLAY] [--vserver VSERVER-NAME] \
 		   [--snap-ignore] [-V VOLUME] [-P]
@@ -691,10 +690,6 @@ The Warning threshold for autosize grow maximum. Defaults to 75%.
 
 The Critical threshold for autosize grow maximum. Defaults to 90%.
 
-=item --state-critical STATE_CRITICAL
-
-The Critical threshold for volume status. Default is "offline".
-
 =item -V | --volume VOLUME
 
 Optional: The name of the Volume to check
@@ -714,10 +709,6 @@ Flag for performance data output
 =item --exclude
 
 Optional: The name of a volume that has to be excluded from the checks (multiple exclude item for multiple volumes)
-
-=item --regexp
-
-Optional: Uses the input in "exclude" parameter as a regex filter for volume names. A value must not be set.
 
 =item --perfdatadir DIR
 
