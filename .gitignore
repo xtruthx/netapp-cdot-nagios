@@ -1,2 +1,13 @@
 *.swp
 /.idea/
+netapp-7mode-nagios/check_7mode_aggr_reserve.pl
+netapp-7mode-nagios/check_7mode_aggr_usage.pl
+netapp-7mode-nagios/check_7mode_interfaces.pl
+netapp-7mode-nagios/check_7mode_multipath.pl
+netapp-7mode-nagios/check_7mode_ntp.pl
+netapp-7mode-nagios/check_7mode_snapmirror.pl
+.gitignore
+netapp-7mode-nagios/check_7mode_snapshot_age.pl
+netapp-7mode-nagios/check_7mode_sparedisk.pl
+netapp-7mode-nagios/check_7mode_uptime.sh
+netapp-7mode-nagios/check_7mode_volume.pl

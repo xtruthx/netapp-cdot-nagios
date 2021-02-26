@@ -55,7 +55,7 @@ GetOptions(
     'h|help'     => sub { exec perldoc => -F => $0 or die "Cannot execute perldoc: $!\n"; },
 ) or Error("$0: Error in command line arguments\n");
 
-my $version = "1.0.1";
+my $version = "1.0.2";
 
 # Filter through full names or regex
 my %Excludelist;
@@ -310,8 +310,11 @@ while(defined($next)){
 	my $volumes = $output->child_get("attributes-list");
 
 	unless($volumes){
-	    print "CRITICAL: no volume matching this name\n";
-	    #exit 2;
+		if($Volume) {
+			print "Error - No volume matching this name\n";
+		} else {
+			print "ERROR: no volumes found. Please check connections to the cluster.\n";
+		}
 		last;
 	}
 	
@@ -431,7 +434,7 @@ while(defined($next)){
 
 				$perfdata{$vol_name}{'autosize_grow'}=$autogrow_percent;
 			} else {
-				print "CRITICAL: no volume autosize info could be retrieved \n";
+				print "INFO: $vol_name no autosize info could be retrieved \n";
 			}
 
 			# get snapshot count for volume
