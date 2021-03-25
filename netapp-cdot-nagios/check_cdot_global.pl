@@ -10,7 +10,6 @@
 # did not receive this file, see http://www.gnu.org/licenses/gpl.txt.
 # --
 
-use 5.10.0;
 use strict;
 use warnings;
 use lib "/usr/lib/netapp-manageability-sdk/lib/perl/NetApp";
@@ -28,6 +27,8 @@ GetOptions(
     'plugin=s'   => \my $Plugin,
     'h|help'     => sub { exec perldoc => -F => $0 or die "Cannot execute perldoc: $!\n"; },
 ) or Error("$0: Error in command line arguments\n");
+
+my $version = "1.0.0"
 
 sub Error {
     print "$0: " . $_[0] . "\n";
@@ -60,6 +61,9 @@ $iterator->child_add($tag_elem);
 my $next = "";
 
 my ($sum_failed_power, $sum_failed_nvram, $sum_failed_temp, $sum_failed_fan, $sum_failed_health) = 0;
+
+# Version output
+print "Script version: $version\n";
 
 while(defined($next)){
     unless($next eq ""){
@@ -168,7 +172,7 @@ given ($Plugin) {
     when("power"){
         if ($sum_failed_power) {
             print "WARNING: $sum_failed_power failed power supplie(s): $failed_node\n";
-            exit 1;
+            exit 2;
         } else {
             print "OK: No failed power supplies\n";
             exit 0;
@@ -177,7 +181,7 @@ given ($Plugin) {
     when("fan"){
         if ($sum_failed_fan) {
             print "WARNING: $sum_failed_fan failed fan(s): $failed_node\n";
-            exit 1;
+            exit 2;
         } else {
             print "OK: No failed fans\n";
             exit 0;

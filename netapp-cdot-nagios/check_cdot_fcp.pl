@@ -33,7 +33,7 @@ GetOptions(
     'help|?'     => sub { exec perldoc => -F => $0 or die "Cannot execute perldoc: $!\n"; },
 ) or Error("$0: Error in command line arguments\n");
 
-my $version = "1.0.1";
+my $version = "1.0.2";
 
 # separate exclude strings into arrays
 my %Excludelist;
@@ -53,7 +53,7 @@ my (@warn_msg, $warn_msg);
 my (@ok_msg, $ok_msg);
 my @return;
 
-my $s = NaServer->new( $Hostname, 1, 140 );
+my $s = NaServer->new( $Hostname, 1, 130 );
 $s->set_transport_type("HTTPS");
 $s->set_style("LOGIN");
 $s->set_admin_user( $Username, $Password );
