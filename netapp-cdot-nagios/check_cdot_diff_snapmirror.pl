@@ -3,6 +3,7 @@
 # nagios: -epn
 # --
 # check_cdot_diff_snapmirror - Checks Volumes without SnapMirror
+# Copyright (C) 2021 operational services GmbH & Co. KG
 # Copyright (C) 2013 noris network AG, http://www.noris.net/
 # --
 # This software comes with ABSOLUTELY NO WARRANTY. For details, see

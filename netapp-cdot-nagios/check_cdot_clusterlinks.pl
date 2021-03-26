@@ -3,6 +3,7 @@
 # nagios: -epn
 # --
 # check_cdot_clusterlinks.pl - Check cDOT HA-Interconnect and Cluster Links
+# Copyright (C) 2021 operational services GmbH & Co. KG
 # Copyright (C) 2013 noris network AG, http://www.noris.net/
 # --
 # This software comes with ABSOLUTELY NO WARRANTY. For details, see
@@ -25,6 +26,10 @@ GetOptions(
     'p|password=s' => \my $Password,
     'help|?'     => sub { exec perldoc => -F => $0 or die "Cannot execute perldoc: $!\n"; },
 ) or Error("$0: Error in command line arguments\n");
+
+my $version = "1.0.0";
+# Version output
+print "Script version: $version\n";
 
 sub Error {
     print "$0: " . $_[0] . "\n";
@@ -54,6 +59,7 @@ my $lifs = $lif_output->child_get("attributes-list");
 my @lif_result = $lifs->children_get();
 
 my @failed_ports;
+my %failed_ics;
 
 foreach my $lif (@lif_result){
 
@@ -71,6 +77,7 @@ foreach my $lif (@lif_result){
     }
 }
 
+
 my $node_api = new NaElement('cluster-node-get-iter');
 my $node_output =$s->invoke_elem($node_api);
 
@@ -84,33 +91,38 @@ my $nodes = $node_output->child_get("attributes-list");
 my @node_result = $nodes->children_get();
 my $cf_api = new NaElement('cf-status');
 
-my %failed_ics;
+my $node_count = scalar @node_result;
 
-foreach my $node (@node_result){
-    my $health = $node->child_get_string("is-node-healthy");
+# skip for one-node clusters
+unless($node_count < 2) {
+    foreach my $node (@node_result){
+        my $health = $node->child_get_string("is-node-healthy");
 
-    if($health eq "true"){
+        if($health eq "true"){
 
-        my $node_name = $node->child_get_string("node-name");
-        my $cf_api = new NaElement('cf-status');
-        $cf_api->child_add_string('node', $node_name);
-        my $cf_output = $s->invoke_elem($cf_api);
+            my $node_name = $node->child_get_string("node-name");
+            my $cf_api = new NaElement('cf-status');
+            $cf_api->child_add_string('node', $node_name);
+            my $cf_output = $s->invoke_elem($cf_api);
 
-        if ($cf_output->results_errno != 0) {
-            my $r = $cf_output->results_reason();
-            print "UNKNOWN: $r\n";
-            exit 3;
-        }
+            if ($cf_output->results_errno != 0) {
+                my $r = $cf_output->results_reason();
+                print "UNKNOWN: $r\n";
+                exit 3;
+            }
 
-        my $link_status = $cf_output->child_get_string("interconnect-links");
-        print $link_status."\n";
-        $link_status = (split(/[()]/, $link_status))[1];
+            my $link_status = $cf_output->child_get_string("interconnect-links");
+            print $link_status."\n";
+            $link_status = (split(/[()]/, $link_status))[1];
 
-        if(grep(/down/, $link_status)){
-            $failed_ics{$node_name} = $link_status;
+            if(grep(/down/, $link_status)){
+                $failed_ics{$node_name} = $link_status;
+            }
         }
     }
-}
+} else { print "INFO: Skipping interconnect link check for one-node-cluster\n"; }
+
+
 
 my $failed_count = @failed_ports;
 my $ics_count = %failed_ics;
@@ -120,10 +132,12 @@ if(($failed_count ne 0) || ( $ics_count ne 0)){
     foreach (@failed_ports){
         print "$_ down, ";
     }
-    foreach (keys %failed_ics){
-        print $failed_ics{$_};
+    unless($node_count < 2) {
+        foreach (keys %failed_ics){
+            print $failed_ics{$_};
+        }
+        exit 2;
     }
-    exit 2;
 } else {
     print "OK: all clusterlinks up\n";
     exit 0;
