@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/perl/bin/perl
 
 # nagios: -epn
 # --
@@ -13,22 +13,22 @@
 use strict;
 use warnings;
 
-use lib "/usr/lib/netapp-manageability-sdk/lib/perl/NetApp";
+use lib "C:/Users/thereseh/OneDrive - NetApp Inc/Documents/netapp-manageability-sdk-9.7P1/lib/perl/NetApp";#use lib "/usr/lib/netapp-manageability-sdk/lib/perl/NetApp";
 use NaServer;
 use NaElement;
 use Getopt::Long;
 use Data::Dumper;
 
 GetOptions(
-    'hostname=s' => \my $Hostname,
-    'username=s' => \my $Username,
-    'password=s' => \my $Password,
+    'H|hostname=s' => \my $Hostname,
+    'u|username=s' => \my $Username,
+    'p|password=s' => \my $Password,
     'exclude=s'  => \my @excludelistarray,
     'regexp'     => \my $regexp,	
     'help|?'     => sub { exec perldoc => -F => $0 or die "Cannot execute perldoc: $!\n"; },
 ) or Error("$0: Error in command line arguments\n");
 
-my $version = "1.0.0";
+my $version = "1.0.1";
 
 my %Excludelist;
 @Excludelist{@excludelistarray}=();
@@ -141,7 +141,7 @@ while(defined($next)){
 
         # notes:
         #  ^MDV_CRS : CDOT Meta Data
-        if (($vol_name =~ m/^MDV_|vol0|_root|-mc$/) || ($type eq "dp")){
+        if (($vol_name =~ m/^MDV_|vol0|_root$/) || ($vserver =~ m/-mc/) || ($type eq "dp")){
             push(@auto_excluded_volumes,$location."\n");
             next;
         }
@@ -150,7 +150,7 @@ while(defined($next)){
             push(@manually_excluded_volumes,$location."\n");
             next;
         }
-		
+        
         if ($regexp and $excludeliststr) {
             if ($vol_name =~ m/$excludeliststr/) {
                 push(@manually_excluded_volumes,$location."\n");
@@ -173,19 +173,19 @@ print "Script version: $version\n";
 if (@missing_snapmirror) {
     print @missing_snapmirror . " volume(s) without snapmirror|\n";
     print "Volume(s) without snapmirror:\n";
-    print "@missing_snapmirror\n";
+    print " @missing_snapmirror\n";
     print "Manually excluded volume(s):\n";
-    print "@manually_excluded_volumes\n";
+    print " @manually_excluded_volumes\n";
     print "Auto excluded volume(s):\n";
-    print "@auto_excluded_volumes\n";
+    print " @auto_excluded_volumes\n";
     exit 1;
 }
 else {
     print "All volumes are snapmirrored|\n";
     print "Manually excluded volume(s):\n";
-    print "@manually_excluded_volumes\n";
+    print " @manually_excluded_volumes\n";
     print "Auto excluded volume(s):\n";
-    print "@auto_excluded_volumes\n";
+    print " @auto_excluded_volumes\n";
     exit 0;
 }
 
