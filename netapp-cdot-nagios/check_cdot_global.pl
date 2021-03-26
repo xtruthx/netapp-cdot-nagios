@@ -15,6 +15,7 @@ use warnings;
 use lib "/usr/lib/netapp-manageability-sdk/lib/perl/NetApp";
 use NaServer;
 use NaElement;
+use feature "switch";
 use Getopt::Long qw(:config no_ignore_case);
 
 # ignore warning for experimental 'given'
@@ -28,7 +29,7 @@ GetOptions(
     'h|help'     => sub { exec perldoc => -F => $0 or die "Cannot execute perldoc: $!\n"; },
 ) or Error("$0: Error in command line arguments\n");
 
-my $version = "1.0.0"
+my $version = "1.0.1";
 
 sub Error {
     print "$0: " . $_[0] . "\n";
@@ -82,10 +83,10 @@ while(defined($next)){
 	my $heads = $output->child_get("attributes-list");
 	my @result = $heads->children_get();
 	
-	given ($Plugin) {
+	given($Plugin){ ###### syntax error at .\check_cdot_global.pl line 85, near ") {"
 	    when("power"){
-	        foreach my $head (@result){
-	            my $failed_power_count = $head->child_get_string("env-failed-power-supply-count");
+	        foreach my $head (@result){ ###### "my" variable @result masks earlier declaration in same scope at .\check_cdot_global.pl line 87.
+	            my $failed_power_count = $head->child_get_string("env-failed-power-supply-count"); ###### "my" variable $head masks earlier declaration in same statement at .\check_cdot_global.pl line 88.
 	            my $node_name = $head->child_get_string("node");
 	            if($failed_power_count){
 	                $sum_failed_power++;
@@ -101,7 +102,7 @@ while(defined($next)){
 	
 	    when("fan"){
 	        foreach my $head (@result){
-	            my $failed_fan_count = $head->child_get_string("env-failed-fan-count");
+	            my $failed_fan_count = $head->child_get_string("env-failed-fan-count"); ###### "my" variable $head masks earlier declaration in same statement at .\check_cdot_global.pl line 104.
 	            my $node_name = $head->child_get_string("node");
 	
 	            if($failed_fan_count){
@@ -117,7 +118,8 @@ while(defined($next)){
 	    }
 	
 	    when("nvram"){
-	        foreach my $head (@result){
+	        foreach my $head (@result){ ###### "my" variable $head masks earlier declaration in same scope at .\check_cdot_global.pl line 120.
+										###### "my" variable @result masks earlier declaration in same scope at .\check_cdot_global.pl line 120.
 	            my $nvram_status = $head->child_get_string("nvram-battery-status");
 	            my $node_name = $head->child_get_string("node");
 	            if($head->child_get_string("is-node-healthy") eq "true"){
@@ -171,7 +173,7 @@ while(defined($next)){
 given ($Plugin) {
     when("power"){
         if ($sum_failed_power) {
-            print "WARNING: $sum_failed_power failed power supplie(s): $failed_node\n";
+            print "CRITICAL: $sum_failed_power failed power supplie(s): $failed_node\n";
             exit 2;
         } else {
             print "OK: No failed power supplies\n";
@@ -180,7 +182,7 @@ given ($Plugin) {
     }
     when("fan"){
         if ($sum_failed_fan) {
-            print "WARNING: $sum_failed_fan failed fan(s): $failed_node\n";
+            print "CRITICAL: $sum_failed_fan failed fan(s): $failed_node\n";
             exit 2;
         } else {
             print "OK: No failed fans\n";

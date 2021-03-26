@@ -3,6 +3,7 @@
 # nagios: -epn
 # --
 # check_cdot_snapshots - Check if old Snapshots exists
+# Copyright (C) 2021 operational services GmbH & Co. KG
 # Copyright (C) 2013 noris network AG, http://www.noris.net/
 # --
 # This software comes with ABSOLUTELY NO WARRANTY. For details, see
@@ -33,6 +34,10 @@ GetOptions(
     'v|verbose'         => \my $verbose,
     'help|?'            => sub { exec perldoc => -F => $0 or die "Cannot execute perldoc: $!\n"; },
 ) or Error("$0: Error in command line arguments\n");
+
+my $version = "1.0.0";
+# Version output
+print "Script version: $version\n";
 
 my %Excludelist;
 @Excludelist{@excludelistarray}=();
@@ -68,7 +73,7 @@ $s->set_timeout(30);
 
 single_volume_check() if $volumename;
 
-my @snapmirrors = snapmirror_volumes();
+# my @snapmirrors = snapmirror_volumes();
 
 my $snap_iterator = NaElement->new("snapshot-get-iter");
 my $tag_elem = NaElement->new("tag");
@@ -143,11 +148,11 @@ while(defined($next)){
             }
 
             if($age >= $AgeOpt){
-                unless(grep(/$vol_name/, @snapmirrors)){
+                #unless(grep(/$vol_name/, @snapmirrors)){
                     unless($snap_name =~ m/^clone/){
                         push @old_snapshots, "$vol_name/$snap_name\n";
                     }
-                }
+                #}
             }
         }
 
@@ -169,7 +174,7 @@ if (@old_snapshots) {
     }
     print "|\n";
     print "* Snapshot(s) older than " . sec2human($AgeOpt) . "\n";
-    print "@old_snapshots\n";
+    print " @old_snapshots\n";
     if (%busy_snapshots){
         print "* Snapshot(s) in busy state\n";
         foreach my $snap (keys %busy_snapshots){
@@ -183,7 +188,7 @@ else {
         print "OK - No snapshots are older than " . sec2human($AgeOpt);
         print "|\n";
         print "Manually excluded snapshot(s):\n";
-        print "@manually_excluded_snapshots\n";
+        print " @manually_excluded_snapshots\n";
         exit 0;
     } else {
         print "WARNING - There are $busy_snapshots_count snapshots in busy state";
@@ -193,50 +198,94 @@ else {
             print "$snap ($busy_snapshots{$snap})\n";
         }
         print "* Manually excluded snapshot(s):\n";
-        print "@manually_excluded_snapshots\n";
+        print " @manually_excluded_snapshots\n";
         exit(1);
     }
 }
 
-sub snapmirror_volumes {
+# get all volumes on this cluster
+# sub volumes {
 
-    my @volumes;
+#     my @volumes;
 
-    my $snapmirror_iterator = NaElement->new("snapmirror-get-iter");
-    my $snapmirror_tag_elem = NaElement->new("tag");
-    $snapmirror_iterator->child_add($snapmirror_tag_elem);
+#     my $volume_iterator = NaElement->new("volume-get-iter");
+#     my $volume_tag_elem = NaElement->new("tag");
+#     $volume_iterator->child_add($volume_tag_elem);
 
-    my $snapmirror_next_tag = "";
+#     my $volume_next_tag = "";
 
-    while(defined($snapmirror_next_tag)){
-        unless($snapmirror_next_tag eq ""){
-            $snapmirror_tag_elem->set_content($snapmirror_next_tag);
-        }
+#     while(defined($volume_next_tag)){
+#         unless($volume_next_tag eq ""){
+#             $volume_tag_elem->set_content($volume_next_tag);
+#         }
 
-        $snapmirror_iterator->child_add_string("max-records", '5000');
-        my $snapmirror_output = $s->invoke_elem($snapmirror_iterator);
+#         $volume_iterator->child_add_string("max-records", '5000');
+#         my $volume_output = $s->invoke_elem($volume_iterator);
 
-        if ($snapmirror_output->results_errno != 0) {
-            my $r = $snapmirror_output->results_reason();
-            print "UNKNOWN: $r\n";
-            exit 3;
-        }
+#         if ($volume_output->results_errno != 0) {
+#             my $r = $volume_output->results_reason();
+#             print "UNKNOWN: $r\n";
+#             exit 3;
+#         }
 
-        if($snapmirror_output->child_get("attributes-list")){
-            my @snap_relations = $snapmirror_output->child_get("attributes-list")->children_get();
+#         if($volume_output->child_get("attributes-list")){
+#             my @snap_relations = $volume_output->child_get("attributes-list")->children_get();
 
-            if(@snap_relations){
+#             if(@snap_relations){
 
-                foreach my $mirror (@snap_relations){
-                    my $dest_vol = $mirror->child_get_string("destination-volume");
-                    push(@volumes,$dest_vol."\n");
-                }
-            }
-        }
-        $snapmirror_next_tag = $snapmirror_output->child_get_string("next-tag");
-    }
-    return @volumes;
-}
+#                 foreach my $volume (@snap_relations){
+#                     my $vol_info = $mirror->child_get("volume-id-attributes");
+#                     my $volume_name = $vol_info->child_get_string("name");
+#                     unless($volume_name !~ m/^vol0|_root$/) { push(@volumes,$volume_name."\n"); }
+#                 }
+#             }
+#         }
+#         $volume_next_tag = $volume_output->child_get_string("next-tag");
+#     }
+
+#     return @volumes;
+# }
+
+
+# sub snapmirror_volumes {
+
+#     my @volumes;
+
+#     my $snapmirror_iterator = NaElement->new("snapmirror-get-iter");
+#     my $snapmirror_tag_elem = NaElement->new("tag");
+#     $snapmirror_iterator->child_add($snapmirror_tag_elem);
+
+#     my $snapmirror_next_tag = "";
+
+#     while(defined($snapmirror_next_tag)){
+#         unless($snapmirror_next_tag eq ""){
+#             $snapmirror_tag_elem->set_content($snapmirror_next_tag);
+#         }
+
+#         $snapmirror_iterator->child_add_string("max-records", '5000');
+#         my $snapmirror_output = $s->invoke_elem($snapmirror_iterator);
+
+#         if ($snapmirror_output->results_errno != 0) {
+#             my $r = $snapmirror_output->results_reason();
+#             print "UNKNOWN: $r\n";
+#             exit 3;
+#         }
+
+#         if($snapmirror_output->child_get("attributes-list")){
+#             my @snap_relations = $snapmirror_output->child_get("attributes-list")->children_get();
+
+#             if(@snap_relations){
+
+#                 foreach my $mirror (@snap_relations){
+#                     my $dest_vol = $mirror->child_get_string("destination-volume");
+#                     push(@volumes,$dest_vol."\n");
+#                 }
+#             }
+#         }
+#         $snapmirror_next_tag = $snapmirror_output->child_get_string("next-tag");
+#     }
+#     return @volumes;
+# }
 
 sub single_volume_check {
 
