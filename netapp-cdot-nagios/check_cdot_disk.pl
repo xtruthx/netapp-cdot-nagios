@@ -4,7 +4,7 @@
 # --
 # check_cdot_disk - Check NetApp System Disk State
 # Copyright (C) 2013 noris network AG, http://www.noris.net/
-# Copyright (C) 2020 Operational Services GmbH & Co. KG, http://www.operational-services.de/
+# Copyright (C) 2021 Operational Services GmbH & Co. KG, http://www.operational-services.de/
 # --
 # This software comes with ABSOLUTELY NO WARRANTY. For details, see
 # the enclosed file COPYING for license information (GPL). If you
@@ -20,7 +20,7 @@ use NaServer;
 use NaElement;
 use Getopt::Long qw(:config no_ignore_case);
 use List::Util qw(max);
-use Data::Dumper;
+use List::MoreUtils qw(uniq);
 
 GetOptions(
     'H|hostname=s'  => \my $Hostname,
@@ -35,7 +35,7 @@ GetOptions(
     'h|help'     => sub { exec perldoc => -F => $0 or die "Cannot execute perldoc: $!\n"; },
 ) or Error("$0: Error in command line arguments\n");
 
-my $version = "1.0.1";
+my $version = "1.0.2";
 
 # Filter through full names or regex
 my %Excludelist;
@@ -53,14 +53,10 @@ Error( 'Option --password needed!' ) unless $Password;
 $critical = 2 unless $critical;
 $warning = 1 unless $warning;
 
-my $s = NaServer->new( $Hostname, 1, 110 );
+my $s = NaServer->new( $Hostname, 1, 130 );
 $s->set_transport_type( "HTTPS" );
 $s->set_style( "LOGIN" );
 $s->set_admin_user( $Username, $Password );
-
-my $iterator = NaElement->new( "storage-disk-get-iter" );
-my $tag_elem = NaElement->new( "tag" );
-$iterator->child_add( $tag_elem );
 
 my $next = "";
 my $disk_count = 0;
@@ -72,6 +68,58 @@ my @spare_disks;
 my @shared_spare_disks;
 my @ret;
 my %inventory = ( 'Spare', 0, 'Rebuilding', 0, 'Aggregate', 0, 'Failed', 0, 'Not_zeroed', 0, 'Unassigned', 0, 'Maintenance', 0);
+
+my $aggr_iterator = NaElement->new( "aggr-spare-get-iter" );
+my $aggr_tag_elem = NaElement->new( "tag" );
+$aggr_iterator->child_add( $aggr_tag_elem );
+
+while(defined( $next )){
+    unless ($next eq "") {
+        $aggr_tag_elem->set_content( $next );
+    }
+
+    $aggr_iterator->child_add_string( "max-records", 100 );
+    my $aggr_output = $s->invoke_elem( $aggr_iterator );
+
+    if ($aggr_output->results_errno != 0) {
+        my $aggr_r = $aggr_output->results_reason();
+        print "UNKNOWN: $aggr_r\n";
+        exit 3;
+    }
+
+    unless($aggr_output->child_get_int( "num-records" ) eq "0") {
+
+        my $aggr = $aggr_output->child_get( "attributes-list" );
+        my @result = $aggr->children_get();
+
+        foreach my $spare_disk (@result) {
+            my $spare_disk_name = $spare_disk->child_get_string('disk');
+            my $shared_status = $spare_disk->child_get_string( "is-disk-shared" );
+            my $zeroed_status = $spare_disk->child_get_string('is-disk-zeroed');
+
+			next if exists $Excludelist{$spare_disk_name};
+		
+			if ($regexp and $excludeliststr) {
+				next if ($spare_disk_name =~ m/$excludeliststr/);
+			}
+
+            if (($shared_status eq 'true')) {
+                # count shared disks as spare only if existing in aggr-spare-get-iter
+                push @shared_spare_disks, $spare_disk_name;
+            }
+            if ($zeroed_status eq 'false') {
+                push @not_zeroed_disks, $spare_disk_name;
+                $inventory{'Not_zeroed'}++;
+            }
+        }
+    }
+    $next = $aggr_output->child_get_string( "next-tag" );
+}
+
+my $iterator = NaElement->new( "storage-disk-get-iter" );
+my $tag_elem = NaElement->new( "tag" );
+$iterator->child_add( $tag_elem );
+$next = "";
 
 while(defined( $next )){
     unless ($next eq "") {
@@ -118,9 +166,6 @@ while(defined( $next )){
                         $inventory{'Rebuilding'}++;
                     } else {
                         $inventory{'Aggregate'}++;
-                        # count shared disks as spare
-                        $inventory{'Spare'}++;
-                        push @shared_spare_disks, $disk_name;
                     }
                 }
             } elsif ( $container eq 'spare' ) {
@@ -169,28 +214,11 @@ while(defined( $next )){
         }
     }
     $next = $output->child_get_string( "next-tag" );
-
 }
-
-# my $perfdatastr='';
-# $perfdatastr = sprintf(" | Aggregate=%d Spare=%d Rebuilding=%d Failed=%d",
-#     $inventory{'Aggregate'}, $inventory{'Spare'}, $inventory{'Rebuilding'}, $inventory{'Failed'}
-# ) if ($perf);
-
-# if ( scalar @disk_list >= $critical ) {
-#     print "CRITICAL: " . @disk_list . ' failed disk(s): ' . join( ', ', @disk_list ) . $perfdatastr ."\n";
-#     exit 2;
-# } elsif ( scalar @disk_list >= $warning ) {
-#     print "WARNING: " . @disk_list .' failed disk(s): ' .join( ', ', @disk_list ) . $perfdatastr ."\n";
-#     exit 1;
-# } elsif(($Diskcount) && ($Diskcount ne $disk_count)) {
-#     $iterator->child_add_string("max-records", 100);
-#     my $output = $s->invoke_elem($iterator);
 
 # Version output
 print "Script version: $version\n";
 
-# Critical nur bei 0 Spares (Shared mitgezählt)
 if ( (scalar @failed_disks ge $critical) || ($inventory{'Spare'} == 0 )) {
 	print "CRITICAL: \n";
 	if ( scalar @failed_disks >= $critical ) {
@@ -200,7 +228,6 @@ if ( (scalar @failed_disks ge $critical) || ($inventory{'Spare'} == 0 )) {
 	if ( $inventory{'Spare'} < 1 ) {
 		print "\nNo spare disks found.";
 	}
-	#print "\n\n$perfdatastr" ;
     push @ret, 2;
 }
 if ( scalar @failed_disks >= $warning || scalar @not_zeroed_disks >= $warning || scalar @maintenance_disks >= $warning ) {
@@ -215,7 +242,6 @@ if ( scalar @failed_disks >= $warning || scalar @not_zeroed_disks >= $warning ||
 		print "\n" . @maintenance_disks . " disk(s) in maintenance:\n" . join( "\n", @maintenance_disks );
 	}
 
-	#print $perfdatastr ."\n";
     push @ret, 1;
 }
 
@@ -229,13 +255,15 @@ if(($Diskcount) && ($Diskcount ne $disk_count)){
     push @ret, 0;
 }
 
-# immer mit Output für unassigned und spare disks
 if ( scalar @unassigned_disks > 0 ) {
     print "\n" . @unassigned_disks . " unassigned disk(s):\n" . join( "\n", @unassigned_disks );
-}   
+}  
+
+# Add list of shared spare disks to $inventory{'Spare'}
+$inventory{'Spare'} = $inventory{'Spare'} + scalar (uniq @shared_spare_disks);
 if ( $inventory{'Spare'} > 0 ) {
     print "\n" . scalar @spare_disks . " spare disk(s):\n" . join("\n", @spare_disks );
-    print "\n" . scalar @shared_spare_disks ." shared spare disk(s):\n" . join("\n", @shared_spare_disks) ;
+    print "\n" . scalar (uniq @shared_spare_disks) ." shared spare disk(s):\n" . join("\n", uniq sort(@shared_spare_disks)) ;
 }   
 
 exit max( @ret );
