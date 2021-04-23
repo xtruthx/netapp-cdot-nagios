@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/perl/bin/perl
 
 # nagios: -epn
 # --
@@ -11,7 +11,8 @@
 # did not receive this file, see http://www.gnu.org/licenses/gpl.txt.
 # --
 
-use lib "/usr/lib/netapp-manageability-sdk/lib/perl/NetApp";
+# use lib "/usr/lib/netapp-manageability-sdk/lib/perl/NetApp";
+use lib "C:/netapp-manageability-sdk-9.8P1/lib/perl/NetApp";
 
 use NaServer;
 use NaElement;
@@ -35,7 +36,7 @@ GetOptions(
     'help|?'            => sub { exec perldoc => -F => $0 or die "Cannot execute perldoc: $!\n"; },
 ) or Error("$0: Error in command line arguments\n");
 
-my $version = "1.0.0";
+my $version = "1.0.1";
 # Version output
 print "Script version: $version\n";
 

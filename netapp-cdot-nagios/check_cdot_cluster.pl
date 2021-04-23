@@ -44,7 +44,7 @@ GetOptions(
     'h|help'     => sub { exec perldoc => -F => $0 or die "Cannot execute perldoc: $!\n"; },
 ) or Error("$0: Error in command line arguments\n");
 
-my $version = "1.0.6";
+my $version = "1.0.7";
 
 # get list of excluded elements
 my %Excludelist;
@@ -131,7 +131,7 @@ my @failed_ports;
 my @failed_ics;
 my @ret;
 
-my $s = NaServer->new( $Hostname, 1, 130 );
+my $s = NaServer->new( $Hostname, 1, 110 );
 $s->set_transport_type("HTTPS");
 $s->set_style("LOGIN");
 $s->set_admin_user( $Username, $Password );
@@ -199,13 +199,13 @@ foreach my $node (@result) {
     foreach my $node_related_info (@node_related_object) {
         $node_name = $node_related_info->child_get_string('node');
 
-        # next if exists $Excludelist{$node_name};
+        next if exists $Excludelist{$node_name};
 
-        # if ($regexp and $excludeliststr) {
-		# 	if ($node_name =~ m/$excludeliststr/) {
-		# 		next;
-		# 	}
-		# }
+        if ($regexp and $excludeliststr) {
+			if ($node_name =~ m/$excludeliststr/) {
+				next;
+			}
+		}
 
         $node_state = $node_related_info->child_get_string('node-state');
         my $node_state_description = $node_related_info->child_get_string('state-description');
@@ -214,26 +214,27 @@ foreach my $node (@result) {
 
         $ok_msg = "$node_name (";
         
-        if(($node_state_description !~ m/Connected/) || $node_current_mode ne 'ha' ) {
+        next if(!$node_current_mode);
 
+        if((($node_state_description !~ m/Connected/) || ($node_current_mode ne 'ha')) && ($cluster_size gt 1)) {
             if($node_state_description !~ m/Connected/) {
                 $crit_msg .= "State: $node_state, Description: $node_state_description, ";
-                # $h_warn_crit_info->{$node_name}->{'node_state_c'} = 1;
             }
-            if (($node_current_mode ne 'ha') && ($cluster_size le 2)) {
+            if ($node_current_mode ne 'ha') {
                 $ok_msg .= "Current HA Mode: $node_current_mode, ";
-                # $h_warn_crit_info->{$node_name}->{'node_mode_c'} = 1;
             } else {
                 $crit_msg .= "Current HA Mode: $node_current_mode, ";
             }
         } else {
             $ok_msg .= "State: $node_state, $node_current_mode, ";
-        }
+        }            
     }
 
     if($cluster_size ge 2) {
         # get takover related information
         my $takeover_info = $node->child_get('sfo-takeover-info');
+        next if(!$takeover_info);
+
         my @takeover_related_object = $takeover_info->children_get();
 
         foreach my $takeover_related_info (@takeover_related_object) {
@@ -244,19 +245,15 @@ foreach my $node (@result) {
             my $takeover_of_reason = $takeover_related_info->child_get_string('takeover-of-partner-not-possible-reason');
             my $takeover_by_reason = $takeover_related_info->child_get_string('takeover-by-partner-not-possible-reason');
 
-            #print $takeover_state." ".$takeover_of." ".$takeover_by."\n";
             if(($takeover_reason) || ($takeover_of_reason) || ($takeover_by_reason)) {
                 if($takeover_reason) {
                     $crit_msg .= "Reason for takeover: $takeover_reason, ";
-                    # $h_warn_crit_info->{$node_name}->{'node_takeover_c'} = 1;
                 }
                 if($takeover_of_reason) {
                     $crit_msg .= "Reason why takeover of partner not possible: $takeover_of_reason, ";
-                    # $h_warn_crit_info->{$node_name}->{'node_takeover_of_c'} = 1;
                 }
                 if($takeover_by_reason) {
                     $crit_msg .= "Reason why takeover by partner not possible: $takeover_by_reason, ";
-                    # $h_warn_crit_info->{$node_name}->{'node_takeover_by_c'} = 1;
                 }
             } else {
                 $ok_msg .= "Takeover State: $takeover_state, Takeover of Partner: $takeover_of, Takeover by Partner: $takeover_by, ";
@@ -416,12 +413,12 @@ if(scalar(@crit_msg) || scalar(@failed_ics) || scalar(@failed_ports)){
     }
     if(scalar(@failed_ports) ){
         print "\n".scalar(@failed_ports)." cluster ports are down: \n";
-        print join ("\n", @failed_ports)."\n\n";
+        print join ("\n", @failed_ports);
         push @ret, 2;
     }
 }
 if(scalar(@ok_msg) ){
-    print "OK:\n";
+    print "\n\nOK:\n";
     print join ("\n", @ok_msg);
     if ($perf) {
                 if($perfdatadir) {

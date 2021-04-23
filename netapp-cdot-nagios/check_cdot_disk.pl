@@ -35,7 +35,7 @@ GetOptions(
     'h|help'     => sub { exec perldoc => -F => $0 or die "Cannot execute perldoc: $!\n"; },
 ) or Error("$0: Error in command line arguments\n");
 
-my $version = "1.0.2";
+my $version = "1.0.3";
 
 # Filter through full names or regex
 my %Excludelist;
@@ -219,6 +219,9 @@ while(defined( $next )){
 # Version output
 print "Script version: $version\n";
 
+# Add list of shared spare disks to $inventory{'Spare'}
+$inventory{'Spare'} = $inventory{'Spare'} + scalar (uniq @shared_spare_disks);
+
 if ( (scalar @failed_disks ge $critical) || ($inventory{'Spare'} == 0 )) {
 	print "CRITICAL: \n";
 	if ( scalar @failed_disks >= $critical ) {
@@ -259,8 +262,6 @@ if ( scalar @unassigned_disks > 0 ) {
     print "\n" . @unassigned_disks . " unassigned disk(s):\n" . join( "\n", @unassigned_disks );
 }  
 
-# Add list of shared spare disks to $inventory{'Spare'}
-$inventory{'Spare'} = $inventory{'Spare'} + scalar (uniq @shared_spare_disks);
 if ( $inventory{'Spare'} > 0 ) {
     print "\n" . scalar @spare_disks . " spare disk(s):\n" . join("\n", @spare_disks );
     print "\n" . scalar (uniq @shared_spare_disks) ." shared spare disk(s):\n" . join("\n", uniq sort(@shared_spare_disks)) ;

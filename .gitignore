@@ -10,3 +10,4 @@ netapp-7mode-nagios/check_7mode_snapshot_age.pl
 netapp-7mode-nagios/check_7mode_sparedisk.pl
 netapp-7mode-nagios/check_7mode_uptime.sh
 netapp-7mode-nagios/check_7mode_volume.pl
+netapp-cdot-nagios/check_cdot_snapshots.pl
