@@ -1,4 +1,4 @@
-#!/perl/bin/perl
+#!/usr/bin/perl
 
 # nagios: -epn
 # --
@@ -11,8 +11,7 @@
 # did not receive this file, see http://www.gnu.org/licenses/gpl.txt.
 # --
 
-# use lib "/usr/lib/netapp-manageability-sdk/lib/perl/NetApp";
-use lib "C:/netapp-manageability-sdk-9.8P1/lib/perl/NetApp";
+use lib "/usr/lib/netapp-manageability-sdk/lib/perl/NetApp";
 
 use NaServer;
 use NaElement;
