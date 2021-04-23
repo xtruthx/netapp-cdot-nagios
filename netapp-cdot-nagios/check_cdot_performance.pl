@@ -49,6 +49,8 @@ GetOptions(
     'h|help'     => sub { exec perldoc => -F => $0 or die "Cannot execute perldoc: $!\n"; },
 ) or Error("$0: Error in command line arguments\n");
 
+my $version = "1.0.0";
+
 # get list of excluded elements
 my %Excludelist;
 @Excludelist{@excludelistarray}=();
@@ -222,7 +224,7 @@ if($Disk){
 
 my $next = "";
 
-my (@crit_msg,@warn_msg,@ok_msg);
+my (@crit_msg,@warn_msg,@ok_msg,@extended_ok);
 
 while(defined($next)){
     unless($next eq ""){
@@ -304,13 +306,16 @@ while(defined($next)){
                 push (@warn_msg, "$warn_msg" );
         } else {
             $h_warn_crit_info->{$disk_name}->{'average_latency'}=$average_latency;
+
+            $ok_msg = "$disk_name (Latency: $average_latency ms)";
+            push (@extended_ok, $ok_msg);
+
             if(!@ok_msg) {
                 if ($Disk) {
                     push (@ok_msg, "Disk $disk_name is in normal condition.\n");  
                 } else {
                     push (@ok_msg, "All disks are in normal condition.\n");   
                 }
-                                 
             }
         }
 
@@ -334,6 +339,8 @@ foreach my $disk ( keys(%perfdata) ) {
 $perfdatavolstr =~ s/^\s+//;
 my $perfdataallstr = "$perfdataglobalstr $perfdatavolstr";
 
+# Version output
+print "Script version: $version\n";
 
 if(scalar(@crit_msg) ){
     print "CRITICAL:\n";
@@ -350,6 +357,8 @@ if(scalar(@crit_msg) ){
 	}
 	#my $strHTML = draw_html_table($h_warn_crit_info);
     #print $strHTML if $output_html; 
+    print join ("\n", @extended_ok)."\n";
+
 	exit 2;
 } elsif(scalar(@warn_msg) ){
     print "WARN:\n";
@@ -365,7 +374,9 @@ if(scalar(@crit_msg) ){
         print "\n";
     }
     #my $strHTML = draw_html_table($h_warn_crit_info);
-    #print $strHTML if $output_html; 
+    #print $strHTML if $output_html;
+        print join ("\n", @extended_ok)."\n";
+
     exit 1;
 } elsif(scalar(@ok_msg) ){
     print "OK: ";
@@ -380,6 +391,8 @@ if(scalar(@crit_msg) ){
         } else {
                 print "\n";
         }
+    print join ("\n", @extended_ok)."\n";
+
     exit 0;
 } else {
     print "WARNING: no cluster found\n";
