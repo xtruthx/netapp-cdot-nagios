@@ -35,7 +35,7 @@ GetOptions(
     'h|help'     => sub { exec perldoc => -F => $0 or die "Cannot execute perldoc: $!\n"; },
 ) or Error("$0: Error in command line arguments\n");
 
-my $version = "1.0.3";
+my $version = "1.0.4";
 
 # Filter through full names or regex
 my %Excludelist;
@@ -239,7 +239,7 @@ if ( scalar @failed_disks >= $warning || scalar @not_zeroed_disks >= $warning ||
 		print "\n" . @failed_disks . " failed disk(s):\n" . join( "\n", @failed_disks );
 	}
 	if ( scalar @not_zeroed_disks >= $warning ) {
-		print "\n" . @not_zeroed_disks . " not zeroed disk(s):\n" . join( "\n", @not_zeroed_disks );
+		print "\n" . @not_zeroed_disks . " not zeroed disk(s):\n" . join( "\n", uniq sort(@not_zeroed_disks) );
 	}
 	if ( scalar @maintenance_disks >= $warning ) {
 		print "\n" . @maintenance_disks . " disk(s) in maintenance:\n" . join( "\n", @maintenance_disks );

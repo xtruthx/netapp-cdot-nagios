@@ -64,9 +64,6 @@ if ($node_output->results_errno != 0) {
 my $heads = $node_output->child_get( "attributes-list" );
 my @result = $heads->children_get();
 
-# gelöschte ifgrp wird immer noch abgefragt
-# done --- human readable Skriptfolge aufschreiben
-# local cluster 2 node
 
 foreach my $head (@result) {
     my $node_name = $head->child_get_string( "node" );
@@ -250,19 +247,21 @@ if($nics) {
 # Version output
 print "Script version: $version\n";
 
-if(@failed_ports && @nic_errors) {
+my $ret = 0;
+
+if(@nic_errors){
     print "CRITICAL: ";
-    print join(", ", @failed_ports);
-    print " in ifgrp and not up\n";
-    print join(", ", @nic_errors);
+    print join(" ", @nic_errors);
     print " with CRC errors\n";
-    exit 2;
-} elsif(@failed_ports){
+    $ret = 2;
+}
+if(@failed_ports){
     print "CRITICAL: ";
     print join(", ", @failed_ports);
     print " in ifgrp and not up\n";
-    exit 2;
-} elsif($failed_speed_count ne 0){
+    $ret = 2;
+}
+if($failed_speed_count ne 0){
     print "CRITICAL: $failed_speed_count ports speed mismatch: ";
     foreach my $node (keys %failed_speed){
 
@@ -276,16 +275,53 @@ if(@failed_ports && @nic_errors) {
 
     }
     print "\n";
-    exit 2;
-} elsif(@nic_errors){
-    print "CRITICAL: ";
-    print join(" ", @nic_errors);
-    print " with CRC errors\n";
-    exit 2;
-} else {
-    print "OK: All IFGRP fully active and no CRC errors\n";
-    exit 0;
+    $ret = 2;
 }
+
+if ($ret == 0) {
+    print "OK: All IFGRP fully active and no CRC errors\n";
+   
+}
+
+exit $ret;
+
+
+# if(@failed_ports && @nic_errors) {
+#     print "CRITICAL: ";
+#     print join(", ", @failed_ports);
+#     print " in ifgrp and not up\n";
+#     print join(", ", @nic_errors);
+#     print " with CRC errors\n";
+#     exit 2;
+# } elsif(@failed_ports){
+#     print "CRITICAL: ";
+#     print join(", ", @failed_ports);
+#     print " in ifgrp and not up\n";
+#     exit 2;
+# } elsif($failed_speed_count ne 0){
+#     print "CRITICAL: $failed_speed_count ports speed mismatch: ";
+#     foreach my $node (keys %failed_speed){
+
+#         print $node . ": ";
+
+#         my $ports = $failed_speed{$node};
+
+#         foreach my $port (@$ports){
+#             print $port . ", ";
+#         }
+
+#     }
+#     print "\n";
+#     exit 2;
+# } elsif(@nic_errors){
+#     print "CRITICAL: ";
+#     print join(" ", @nic_errors);
+#     print " with CRC errors\n";
+#     exit 2;
+# } else {
+#     print "OK: All IFGRP fully active and no CRC errors\n";
+#     exit 0;
+# }
 
 __END__
 

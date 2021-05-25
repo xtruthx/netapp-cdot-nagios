@@ -32,7 +32,7 @@ GetOptions(
     'help|?'     => sub { exec perldoc => -F => $0 or die "Cannot execute perldoc: $!\n"; },
 ) or Error( "$0: Error in command line arguments\n" );
 
-my $version = "1.0.3";
+my $version = "1.0.4";
 
 my %Excludelist;
 @Excludelist{@excludelistarray}=();
@@ -128,7 +128,7 @@ while(defined( $next )){
                 }
             }
 
-            		next if exists $Excludelist{$vol_name};
+            next if exists $Excludelist{$vol_name};
 	
             if ($regexp and $excludeliststr) {
                 if ($vol_name =~ m/$excludeliststr/) {
@@ -143,7 +143,8 @@ while(defined( $next )){
     	
     	        if ($state && ($state eq "online")) {
     	
-    	            unless (($vol_name eq "vol0") || ($vol_name =~ m/_root$/) || ($vol_type eq "dp") || ($vol_name =~ m/^temp__/) || ($vol_name =~ m/^CC_snapprotect_SP/) || ($vol_name =~ m/^MDV_/)){
+    	            # unless (($vol_name eq "vol0") || ($vol_name =~ m/_root$/) || ($vol_type eq "dp") || ($vol_name =~ m/^temp__/) || ($vol_name =~ m/^CC_snapprotect_SP/) || ($vol_name =~ m/^MDV_/)){
+    	            unless (($vol_name eq "vol0") || ($vol_name =~ m/_root$/) || ($vol_name =~ m/^temp__/) || ($vol_name =~ m/^CC_snapprotect_SP/) || ($vol_name =~ m/^MDV_/)){
     	
     	                my $space = $vol->child_get( "volume-space-attributes" );
     	                my $qos = $vol->child_get( "volume-qos-attributes" );

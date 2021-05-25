@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/perl/bin/perl
 
 # nagios: -epn
 # --
@@ -14,7 +14,8 @@
 use strict;
 use warnings;
 
-use lib "/usr/lib/netapp-manageability-sdk/lib/perl/NetApp";
+# use lib "/usr/lib/netapp-manageability-sdk/lib/perl/NetApp";
+use lib "C:/netapp-manageability-sdk-9.8P1/lib/perl/NetApp";
 
 use NaServer;
 use NaElement;
@@ -60,107 +61,6 @@ sub Error {
     print "$0: " . $_[0] . "\n";
     exit 2;
 }
-
-
-# # html output containing the cluster and its status
-# # _c = warning in yellow
-# # rest = safe in green
-# sub draw_html_table {
-# 	my ($hrefInfo) = @_;
-# 	my @headers = qw(cluster state);
-# 	# define columns that will be filled and shown
-# 	my @columns = qw(cluster_state);
-# 	my $html_table="";
-# 	$html_table .= "<table class=\"common-table\" style=\"border-collapse:collapse; border: 1px solid black;\">";
-# 	$html_table .= "<tr>";
-# 	foreach (@headers) {
-# 		$html_table .= "<th style=\"text-align: left; padding-left: 4px; padding-right: 6px;\">".$_."</th>";
-# 	}
-# 	$html_table .= "</tr>";
-# 	foreach my $cluster (sort {lc $a cmp lc $b} keys %$hrefInfo) {
-# 		$html_table .= "<tr>";
-# 		$html_table .= "<tr style=\"border: 1px solid black;\">";
-# 		$html_table .= "<td style=\"text-align: left; padding-left: 4px; padding-right: 6px; background-color: #acacac;\">".$cluster."</td>";
-# 		# loop through all attributes defined in @columns
-# 		foreach my $attr (@columns) {
-# 			if ($attr eq "cluster_state") {
-#                 if (defined $hrefInfo->{$cluster}->{"cluster_state_c"}){
-# 					$html_table .= "<td class=\"state-critical\" style=\"text-align: left; padding-left: 4px; padding-right: 6px; background-color: #f83838\">".$hrefInfo->{$cluster}->{$attr}."</td>";
-#                 } elsif (defined $hrefInfo->{$cluster}->{"cluster_state_w"}){
-# 					$html_table .= "<td class=\"state-warning\" style=\"text-align: left; padding-left: 4px; padding-right: 6px; background-color:  #FFFF00\">".$hrefInfo->{$cluster}->{$attr}."</td>";
-# 				} else {
-# 					$html_table .= "<td class=\"state-ok\" style=\"text-align: left; padding-left: 4px; padding-right: 6px; background-color: #33ff00\">".$hrefInfo->{$cluster}->{$attr}."</td>";
-# 				}
-# 			} else {
-# 				$html_table .= "<td style=\"text-align: left; padding-left: 4px; padding-right: 6px;\">".$hrefInfo->{$cluster}->{$attr}."</td>";
-# 			}
-# 		}
-# 		$html_table .= "</tr>";
-# 	}
-# 	$html_table .= "</table>\n";
-
-# 	return $html_table;
-# }
-
-# # write performance data for plugin
-# sub perfdata_to_file {
-#     # write perfdata to a spoolfile in perfdatadir instead of in plugin output
-
-#     my ($s_starttime, $s_perfdatadir, $s_hostdisplay, $s_perfdataservicedesc, $s_perfdata) = @_;
-
-#     if (! $s_perfdataservicedesc) {
-#         if (defined $ENV{'NAGIOS_SERVICEDESC'} and $ENV{'NAGIOS_SERVICEDESC'} ne "") {
-#             $s_perfdataservicedesc = $ENV{'NAGIOS_SERVICEDESC'};
-#         } elsif (defined $ENV{'ICINGA_SERVICEDESC'} and $ENV{'ICINGA_SERVICEDESC'} ne "") {
-#             $s_perfdataservicedesc = $ENV{'ICINGA_SERVICEDESC'};
-#         } else {
-#             print "UNKNOWN: please specify --perfdataservicedesc when you want to use --perfdatadir to output perfdata.";
-#             exit 3;
-#         }
-#     }
-
-#     if (! $s_hostdisplay) {
-#         if (defined $ENV{'NAGIOS_HOSTNAME'} and $ENV{'NAGIOS_HOSTNAME'} ne "") {
-#             $s_hostdisplay = $ENV{'NAGIOS_HOSTNAME'};
-#         }  elsif (defined $ENV{'ICINGA_HOSTDISPLAYNAME'} and $ENV{'ICINGA_HOSTDISPLAYNAME'} ne "") {
-#             $s_hostdisplay = $ENV{'ICINGA_HOSTDISPLAYNAME'};
-#         } else {
-#             print "UNKNOWN: please specify --hostdisplay when you want to use --perfdatadir to output perfdata.";
-#             exit 3;
-#         }
-#     }
-
-    
-#     # PNP Data example: (without the linebreaks)
-#     # DATATYPE::SERVICEPERFDATA\t
-#     # TIMET::$TIMET$\t
-#     # HOSTNAME::$HOSTNAME$\t                       -| this relies on getting the same hostname as in Icinga from -H or -h
-#     # SERVICEDESC::$SERVICEDESC$\t
-#     # SERVICEPERFDATA::$SERVICEPERFDATA$\t
-#     # SERVICECHECKCOMMAND::$SERVICECHECKCOMMAND$\t -| not needed (interfacetables uses own templates)
-#     # HOSTSTATE::$HOSTSTATE$\t                     -|
-#     # HOSTSTATETYPE::$HOSTSTATETYPE$\t              | not available here
-#     # SERVICESTATE::$SERVICESTATE$\t                | so its skipped
-#     # SERVICESTATETYPE::$SERVICESTATETYPE$         -|
-
-#     # build the output
-#     my $s_perfoutput;
-#     $s_perfoutput .= "DATATYPE::SERVICEPERFDATA\tTIMET::".$s_starttime;
-#     $s_perfoutput .= "\tHOSTNAME::".$s_hostdisplay;
-#     $s_perfoutput .= "\tSERVICEDESC::".$s_perfdataservicedesc;
-#     $s_perfoutput .= "\tSERVICEPERFDATA::".$s_perfdata;
-#     $s_perfoutput .= "\n";
-
-#     # flush to spoolfile
-#     my $filename = $s_perfdatadir . "/check_cdot_clusterstat.$s_starttime";
-#     umask "0000";
-#     open (OUT,">>$filename") or die "cannot open $filename $!";
-#     flock (OUT, 2) or die "cannot flock $filename ($!)"; # get exclusive lock;
-#     print OUT $s_perfoutput;
-#     close(OUT);
-    
-# }
-
 
 Error('Option --hostname needed!') unless $Hostname;
 Error('Option --username needed!') unless $Username;
@@ -324,73 +224,24 @@ while(defined($next)){
 	$next = $output->child_get_string("next-tag");
 }
 
-
-# Build perf data string for output
-my $perfdataglobalstr=sprintf("disk_count::check_cdot_disk_count::count=%d;;;0;;", $disk_count);
-my $perfdatavolstr="";
-foreach my $disk ( keys(%perfdata) ) {
-	# DS[1] -$cluster state
-	if( $perfdata{$disk}{'cluster_state'} ) {
-		$perfdatavolstr.=sprintf(" cluster_state=%s", $perfdata{$disk}{'cluster_state'} );
-	}
-}
-
-
-$perfdatavolstr =~ s/^\s+//;
-my $perfdataallstr = "$perfdataglobalstr $perfdatavolstr";
-
 # Version output
 print "Script version: $version\n";
 
 if(scalar(@crit_msg) ){
     print "CRITICAL:\n";
     print join (" ", @crit_msg);
-    if ($perf) { 
-		if($perfdatadir) {
-			perfdata_to_file($STARTTIME, $perfdatadir, $hostdisplay, $perfdataservicedesc, $perfdataallstr);
-			print "|$perfdataglobalstr\n";
-		} else {
-			print "|$perfdataallstr\n";
-		}
-	} else {
-		print "\n";
-	}
-	#my $strHTML = draw_html_table($h_warn_crit_info);
-    #print $strHTML if $output_html; 
     print join ("\n", @extended_ok)."\n";
 
 	exit 2;
 } elsif(scalar(@warn_msg) ){
     print "WARN:\n";
     print join (" ", @warn_msg);
-    if ($perf) {
-        if($perfdatadir) {
-                perfdata_to_file($STARTTIME, $perfdatadir, $hostdisplay, $perfdataservicedesc, $perfdataallstr);
-                print "|$perfdataglobalstr\n";
-        } else {
-                print "|$perfdataallstr\n";
-        }
-    } else {
-        print "\n";
-    }
-    #my $strHTML = draw_html_table($h_warn_crit_info);
-    #print $strHTML if $output_html;
-        print join ("\n", @extended_ok)."\n";
+    print join ("\n", @extended_ok)."\n";
 
     exit 1;
 } elsif(scalar(@ok_msg) ){
     print "OK: ";
     print join (" ", @ok_msg);
-    if ($perf) {
-                if($perfdatadir) {
-                        perfdata_to_file($STARTTIME, $perfdatadir, $hostdisplay, $perfdataservicedesc, $perfdataallstr);
-                        print "|$perfdataglobalstr\n";
-                } else {
-                        print "|$perfdataallstr\n";
-                }
-        } else {
-                print "\n";
-        }
     print join ("\n", @extended_ok)."\n";
 
     exit 0;
