@@ -36,7 +36,7 @@ GetOptions(
     'h|help'     => sub { exec perldoc => -F => $0 or die "Cannot execute perldoc: $!\n"; },
 ) or Error("$0: Error in command line arguments\n");
 
-my $version = "1.0.0";
+my $version = "1.0.1";
 
 # get list of excluded elements
 my %Excludelist;
@@ -85,7 +85,7 @@ foreach my $peer (@result) {
     my $remote_vserver_name = $peer->child_get_string("remote-vserver-name");
 
     next if exists $Excludelist{$vserver_name};
-    next if exists $Excludelist{$peer_vserver;
+    next if exists $Excludelist{$peer_vserver};
 
     if ($regexp and $excludeliststr) {
         if (($vserver_name =~ m/$excludeliststr/) || ($peer_vserver =~ m/$excludeliststr/)) {

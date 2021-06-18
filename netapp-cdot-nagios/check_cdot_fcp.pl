@@ -33,7 +33,7 @@ GetOptions(
     'help|?'     => sub { exec perldoc => -F => $0 or die "Cannot execute perldoc: $!\n"; },
 ) or Error("$0: Error in command line arguments\n");
 
-my $version = "1.0.2";
+my $version = "1.0.3";
 
 # separate exclude strings into arrays
 my %Excludelist;
@@ -73,6 +73,7 @@ $fcp_adapter_info->child_add_string('adapter','adapter');
 $fcp_adapter_info->child_add_string('node','node');
 $fcp_adapter_info->child_add_string('state','state');
 $fcp_adapter_info->child_add_string('physical-link-state','physical-link-state');
+$fcp_adapter_info->child_add_string('status-admin','status-admin');
 
 # specify adapter
 my $xi1 = new NaElement('query');
@@ -119,6 +120,9 @@ while(defined($next)){
         my $node_name = $adapt->child_get_string("node");
         my $physical_link_status = $adapt->child_get_string("physical-link-state");
         my $state = $adapt->child_get_string("state");
+        my $admin_state = $adapt->child_get_string("status-admin");
+
+        if($admin_state) { next if($admin_state eq "down") } else { next };
 
         # Check CNA adapters for physical link state
         if($physical_link_status) {
