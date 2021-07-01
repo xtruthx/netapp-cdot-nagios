@@ -35,7 +35,7 @@ GetOptions(
     'help|?'            => sub { exec perldoc => -F => $0 or die "Cannot execute perldoc: $!\n"; },
 ) or Error("$0: Error in command line arguments\n");
 
-my $version = "1.0.1";
+my $version = "1.0.2";
 # Version output
 print "Script version: $version\n";
 
@@ -65,7 +65,7 @@ $AgeOpt = 3600 * 24 * 90 unless $AgeOpt; # 90 days
 my @old_snapshots;
 my $now = time;
 
-my $s = NaServer->new( $Hostname, 1, 3 );
+my $s = NaServer->new( $Hostname, 1, 110 );
 $s->set_transport_type("HTTPS");
 $s->set_style("LOGIN");
 $s->set_admin_user( $Username, $Password );
