@@ -29,7 +29,7 @@ GetOptions(
     'help|?'     => sub { exec perldoc => -F => $0 or die "Cannot execute perldoc: $!\n"; },
 ) or Error("$0: Error in command line arguments\n");
 
-my $version = "1.0.1";
+my $version = "1.0.2";
 
 my %Excludelist;
 @Excludelist{@excludelistarray}=();
@@ -75,7 +75,7 @@ while(defined($next)){
         my $num_records = $snap_output->child_get_string("num-records");
 
         if($num_records eq 0){
-                print "OK - Nothing to check\n";
+                print "Skript Version $version: OK - Nothing to check\n";
                 exit 0;
         }
 	

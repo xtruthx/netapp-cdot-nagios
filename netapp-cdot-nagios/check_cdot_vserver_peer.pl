@@ -1,4 +1,4 @@
-#!/perl/bin/perl
+#!/usr/bin/perl
 
 # nagios: -epn
 # --
@@ -13,8 +13,7 @@
 use strict;
 use warnings;
 
-# use lib "/usr/lib/netapp-manageability-sdk/lib/perl/NetApp";
-use lib "C:/netapp-manageability-sdk-9.8P1/lib/perl/NetApp";
+use lib "/usr/lib/netapp-manageability-sdk/lib/perl/NetApp";
 
 use NaServer;
 use NaElement;
